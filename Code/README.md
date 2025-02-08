@@ -1,1 +1,1 @@
-This code and these programs were developed by the Brainard Lab--the original code is on [Github](https://github.com/BrainardLab/TeachingCode/tree/master/ArduinoAnomaloscope).
+The code and these programs here were developed by the Brainard Lab--the original code is on [Github](https://github.com/BrainardLab/TeachingCode/tree/master/ArduinoAnomaloscope). The code there is more actively maintained - this site is for the hardware.
