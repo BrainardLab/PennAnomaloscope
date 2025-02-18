@@ -1,4 +1,4 @@
-# ArduinoAnomaloscope
+# PennAnomaloscope
 
 This site provides info on building the Penn Anomaloscope, an Arduino-based LED anomaloscope designed for teaching and (maybe) research.
 
@@ -6,7 +6,7 @@ The anomaloscope was developed by Leana Keesing and David Brainard, with support
 
 ## Materials
 
-See parts list
+See parts list spreadsheet.
 
 ## Assembly Steps
 
