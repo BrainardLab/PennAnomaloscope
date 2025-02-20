@@ -2,18 +2,21 @@
 
 This site provides info on building the Penn Anomaloscope, an Arduino-based LED anomaloscope designed for teaching and (maybe) research.
 
-The anomaloscope was developed by Leana Keesing and David Brainard, with support from Optica.  This site is a fork of Leana Keesing's original site, and is the one that is (as of 2025) being maintained.
+The anomaloscope was developed by Leana Keesing and David Brainard, with support from Optica.  This site began as a fork of Leana Keesing's original site, and includes code that was originally provided as part of the Brainard Lab's Teaching Code repository. This is now the respository that (as of 2025) is being developed and maintained.
 
-## Materials
+## CAD
 
-See parts list spreadsheet.
+3D printing STL files for the housing.  The README has a link to a movie that shows the electronics being assembled into the 3D printed housing parts.
 
-## Assembly Steps
+## Code
 
-1. Using the [instructions](/Electronics/README.md) in the Electronics folder, assemble the electronics necessary for the anomaloscope. This will require the correct parts (Arduino, shield, components) and soldering.
-2. Using the [instructions](/CAD/README.md) and files in the CAD folder, 3D print the required components and assemble the entire anomaloscope.
-3. Using the [sample code](/Code/) available in the Code folder and MATLAB, begin experimenting with the anomaloscope!
+Some basic code for controlling the anomaloscope. Includes code contributed by others. 
+
+## Electronics
+
+Parts list for the electronics (see 2025 updated version) as well as instructions for assembling the electronics.
 
 ## Updates
 
-02-08-2025 - Uploaded updated parts list provided by Alexander Gokan.
+02-2025 - Uploaded updated parts list provided by Alexander Gokan.
+02-2025 - Assembly instructions expanded and made consistent with how we are now building these.
