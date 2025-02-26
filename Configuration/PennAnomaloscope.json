@@ -29,7 +29,7 @@
 		"flavor": "",
 		"hook": "",
 		"importance": "",
-		"localHookTemplate": "",
+		"localHookTemplate": "PennAnomaloscopeLocalHookTemplate.m",
 		"name": "PennAnomaloscope",
 		"pathPlacement": "append",
 		"subfolder": "",
