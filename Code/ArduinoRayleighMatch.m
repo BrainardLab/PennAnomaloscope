@@ -16,6 +16,7 @@
 %   2022-08-27  dhb  Autodect of port for compatibility with newer systesm.
 %                    Thanks to John Mollon's group for identifying the
 %                    basic problem and fix.
+%   2025-03-02  dhb  Add support for BrainardLabToolbox GamePad interface.
 
 % Put the arduino toolbox some place on you system. This
 % the adds it dynamically. The Matlab add on manager doesn't
@@ -78,6 +79,34 @@ else
     end
 end
 
+% Check for game pad, and initialize if present
+%   'GamePad'     - (Default). Use BrainardLabToolbox GamePad interface.
+%   'MatlabInput' - Use Matlab's input() function.
+%   'PTB'         - Use Psychtoolbox GetChar() function.
+interfaceMethod = 'GamePad';
+switch (interfaceMethod)
+    case 'GamePad'
+        try
+            gamePad = GamePad;
+            fprintf('Game pad detected. Using game pad.\n');
+        catch
+            gamePad = [];
+            interfaceMethod = 'MatlabInput';
+            fprintf('No game pad detected, using Matlab''s input(); function.\n');
+        end
+    case 'MatlabInput'
+        fprintf('Using Matlab''s input() function.\n');
+    case 'PTB'
+        try 
+            ListenChar(2);
+            FlushEvents;
+            fprintf('Using Psychtoolbox keyboard i/o.');
+        catch
+            interfaceMethod = 'MatlabInput';
+            fprintf('Working PTB not detected, using Matlab''s input(); function.\n');
+        end
+end
+
 % Yellow LED parameters
 yellow = 66;                                    % Initial yellow value
 yellowDeltas = [10 5 1];                        % Set of yellow deltas
@@ -94,38 +123,9 @@ lambdaDeltaIndex = 1;                           % Delta index
 lambdaDelta = lambdaDeltas(lambdaDeltaIndex);   % Current delta
 
 % Booleans that control whether we just show red or just green
-% LED in mixture.  This is mostly useful for debugging
+% LED in mixture.  This is mostly useful for debugging.
 redOnly = false;
 greenOnly = false;
-
-% Setup character capture.  Note that if you crash out of the program
-% you need to execute ListenChar(0) before you can enter keys at keyboard 
-% again.
-PTB = false;
-if (PTB)
-    ListenChar(2);
-    FlushEvents;
-end
-
-% KbName('UnifyKeyNames');
-%
-%     [ keyIsDown, seconds, keyCode ] = KbCheck;
-%     keyCode = find(keyCode, 1);
-% 
-%     % If the user is pressing a key, then display its code number and name.
-%     if keyIsDown
-%         % Note that we use find(keyCode) because keyCode is an array.
-%         % See 'help KbCheck'
-%         fprintf('You pressed key %i which is %s\n', keyCode, KbName(keyCode));
-% 
-%         if keyCode == escapeKey
-%             break;
-%         end
-% 
-%         % If the user holds down a key, KbCheck will report multiple events.
-%         % To condense multiple 'keyDown' events into a single event, we wait until all
-%         % keys have been released.
-%         KbReleaseWait;
 
 % Loop and process characters to control yellow intensity and 
 % red/green mixture
@@ -178,12 +178,39 @@ while true
     
     % Check for chars and process if one is pressed.  See comment above for
     % what each character does.
-    if (PTB)
-        theChar = GetChar;
-    else
-        theString = input('Enter char followed by enter: ','s');
-        theChar = theString(1);
+    switch (interfaceMethod)
+        % GamePad interface.  What until something happens on the game pad,
+        % translate to a character via GamePadToChar function, then proceed
+        % as if we were using a character interface.
+        case 'GamePad'
+            % What until something happens on the game pad
+            action = gamePad.read;
+            while (action == gamePad.noChange)
+                action = gamePad.read();
+            end   
+
+            % Map game pad responses to chars
+            theChar = GamePadToChar(gamePad,action);
+
+            % Wait for game pad button up
+            while (action ~= gamePad.noChange)
+                action = gamePad.read;
+            end
+
+        % Use the Matlab built-in input() function.  Klunky because you
+        % have to hit return, but works on any computer.
+        case 'MatlabInput'
+            theString = input('Enter char followed by enter: ','s');
+            theChar = theString(1);
+
+        % Use Psychtoolbox-3 GetChar function.  Works if you have a
+        % supported computer and version of Psychtoolbox-3.
+        case 'PTB'
+            theChar = GetChar;
+
     end
+
+    % Do whatever the character we have says to do
     switch theChar
         case 'q'
             break;
@@ -245,9 +272,105 @@ while true
 end
 
 % Turn off character capture.
-if (PTB)
+if (strcmp(interfaceMethod,'PTB'))
     ListenChar(0);
 end
 
+% Turn off gamepad
+if (strcmp(interfaceMethod,'GamePad'))
+    gamePad.shutDown();
+end
+    
 % Close arduino
 clear a;
+
+
+% Function to map game pad actions to characters
+% Loop and process characters to control yellow intensity and 
+% red/green mixture
+%
+% Bacj                 -> 'q' - Exit program
+%
+% East                  -> 'r' - Increase red in r/g mixture
+% West                  -> 'g' - Increase green in r/g mixture
+% North                 -> 'i' - Increase yellow intensity
+% South                 -> 'd' - Decrease yellow intensity
+%
+% B                     -> '1' - Turn off green, only red in r/g mixture
+% A                     -> '2' - Turn off red, only green in r/g mixture
+% Y                     -> '3' - Both red and green in r/g mixture
+% 
+% Left Upper Trigger    -> 'a' - Advance to next r/g delta (cyclic)
+% Right Upper Trigger   -> ';' - Advance to next yellow delta (cyclic)
+
+function theChar = GamePadToChar(gamePad,action)
+
+theChar = [];
+switch (action)
+    case gamePad.noChange       % do nothing
+
+    case gamePad.buttonChange   % see which button was pressed
+        % Control buttons
+        if (gamePad.buttonBack)
+            fprintf('Back button\n');
+            theChar = 'q';
+        elseif (gamePad.buttonStart)
+            fprintf('Start button\n');
+
+        % Colored buttons (on the right)
+        elseif (gamePad.buttonX)
+            % fprintf('''X'' button\n');
+        elseif (gamePad.buttonY)
+            % fprintf('''Y'' button\n');
+            theChar = '3';
+        elseif (gamePad.buttonA)
+            % fprintf('''A'' button\n');
+            theChar = '2';
+        elseif (gamePad.buttonB)
+            % fprintf('''B'' button\n');
+            theChar = '1';
+
+        % Trigger buttons
+        elseif (gamePad.buttonLeftUpperTrigger)
+            % fprintf('Left Upper Trigger button\n');
+            theChar = 'a';
+        elseif (gamePad.buttonRightUpperTrigger)
+            % fprintf('Right Upper Trigger button\n');
+            theChar = ';';
+        elseif (gamePad.buttonLeftLowerTrigger)
+            % fprintf('Left Lower Trigger button\n');
+        elseif (gamePad.buttonRightLowerTrigger)
+            % fprintf('Right Lower Trigger button\n');
+        end
+
+    case gamePad.directionalButtonChange  % see which direction was selected
+        switch (gamePad.directionChoice)
+            case gamePad.directionEast
+                fprintf('East\n');
+                theChar = 'r';
+            case gamePad.directionWest
+                fprintf('West\n');
+                theChar = 'g';
+            case gamePad.directionNorth
+                fprintf('North\n');
+                theChar = 'i';
+            case gamePad.directionSouth
+                fprintf('South\n');
+                theChar = 'd';
+            case gamePad.directionNone
+                fprintf('No direction\n');
+        end  % switch (gamePad.directionChoice)
+
+    case gamePad.joystickChange % see which analog joystick was changed
+        if (gamePad.leftJoyStickDeltaX ~= 0)
+            fprintf('Left Joystick delta-X: %d\n', gamePad.leftJoyStickDeltaX);
+        elseif (gamePad.leftJoyStickDeltaY ~= 0)
+            fprintf('Left Joystick delta-Y: %d\n', gamePad.leftJoyStickDeltaY);
+        elseif (gamePad.rightJoyStickDeltaX ~= 0)
+            fprintf('Right Joystick delta-X: %d\n', gamePad.rightJoyStickDeltaX);
+        elseif (gamePad.rightJoyStickDeltaY ~= 0)
+            fprintf('Right Joystick delta-Y: %d\n', gamePad.rightJoyStickDeltaY);
+        end
+end
+
+end
