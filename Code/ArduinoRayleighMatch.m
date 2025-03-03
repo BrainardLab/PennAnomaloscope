@@ -31,7 +31,7 @@ if (~exist('arduinosetup.m','file'))
     if (~strcmp(computer,'MACI64') & ~strcmp(computer,'MACA64'))
         error('You need to modify code for Windows/Linux to get the Arduino AddOn Toolbox onto your path and to get the arduino call to find the device');
     end
-    a = ver;
+    a = ver('MATLAB');
     rel = a(1).Release(2:end-1);
     sysInfo = GetComputerInfo;
     user = sysInfo.userShortName;
