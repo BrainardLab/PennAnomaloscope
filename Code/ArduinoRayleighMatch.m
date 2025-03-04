@@ -17,6 +17,7 @@
 %                    Thanks to John Mollon's group for identifying the
 %                    basic problem and fix.
 %   2025-03-02  dhb  Add support for BrainardLabToolbox GamePad interface.
+%   2025-03-04  dhb  Better Windows support.
 
 % Put the arduino toolbox some place on you system. This
 % the adds it dynamically. The Matlab add on manager doesn't
