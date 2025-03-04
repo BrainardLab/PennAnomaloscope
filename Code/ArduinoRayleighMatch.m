@@ -267,6 +267,10 @@ while true
                 yellowDeltaIndex = 1;
             end
             yellowDelta = yellowDeltas(yellowDeltaIndex);
+
+        case 'z'
+            % Do nothing for 'z' - returned by unassigned buttons of game
+            % pad.
             
         otherwise
             
@@ -308,7 +312,7 @@ clear a;
 
 function theChar = GamePadToChar(gamePad,action)
 
-theChar = [];
+theChar = 'z';
 switch (action)
     case gamePad.noChange       % do nothing
 
