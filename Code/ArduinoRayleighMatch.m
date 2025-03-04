@@ -315,10 +315,10 @@ switch (action)
     case gamePad.buttonChange   % see which button was pressed
         % Control buttons
         if (gamePad.buttonBack)
-            fprintf('Back button\n');
+            % fprintf('Back button\n');
             theChar = 'q';
         elseif (gamePad.buttonStart)
-            fprintf('Start button\n');
+            % fprintf('Start button\n');
 
         % Colored buttons (on the right)
         elseif (gamePad.buttonX)
@@ -349,30 +349,30 @@ switch (action)
     case gamePad.directionalButtonChange  % see which direction was selected
         switch (gamePad.directionChoice)
             case gamePad.directionEast
-                fprintf('East\n');
+                % fprintf('East\n');
                 theChar = 'r';
             case gamePad.directionWest
-                fprintf('West\n');
+                % fprintf('West\n');
                 theChar = 'g';
             case gamePad.directionNorth
-                fprintf('North\n');
+                % fprintf('North\n');
                 theChar = 'i';
             case gamePad.directionSouth
-                fprintf('South\n');
+                % fprintf('South\n');
                 theChar = 'd';
             case gamePad.directionNone
-                fprintf('No direction\n');
+                % fprintf('No direction\n');
         end  % switch (gamePad.directionChoice)
 
     case gamePad.joystickChange % see which analog joystick was changed
         if (gamePad.leftJoyStickDeltaX ~= 0)
-            fprintf('Left Joystick delta-X: %d\n', gamePad.leftJoyStickDeltaX);
+            % fprintf('Left Joystick delta-X: %d\n', gamePad.leftJoyStickDeltaX);
         elseif (gamePad.leftJoyStickDeltaY ~= 0)
-            fprintf('Left Joystick delta-Y: %d\n', gamePad.leftJoyStickDeltaY);
+            % fprintf('Left Joystick delta-Y: %d\n', gamePad.leftJoyStickDeltaY);
         elseif (gamePad.rightJoyStickDeltaX ~= 0)
-            fprintf('Right Joystick delta-X: %d\n', gamePad.rightJoyStickDeltaX);
+            % fprintf('Right Joystick delta-X: %d\n', gamePad.rightJoyStickDeltaX);
         elseif (gamePad.rightJoyStickDeltaY ~= 0)
-            fprintf('Right Joystick delta-Y: %d\n', gamePad.rightJoyStickDeltaY);
+            % fprintf('Right Joystick delta-Y: %d\n', gamePad.rightJoyStickDeltaY);
         end
 end
 
