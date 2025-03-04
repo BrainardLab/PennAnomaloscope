@@ -33,8 +33,8 @@ if (~exist('arduinosetup.m','file'))
         supportPackageDir = matlabshared.supportpkg.getSupportPackageRoot;
         addpath(genpath(supportPackageDir));
     else
-        a = ver;
-        rel = a(1).Release(2:end-1);
+        a = ver('MATLAB');
+        rel = a.Release(2:end-1);
         sysInfo = GetComputerInfo;
         user = sysInfo.userShortName;
         addpath(genpath(fullfile('/Users',user,'Documents','MATLAB','SupportPackages',rel)));
