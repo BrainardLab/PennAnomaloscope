@@ -19,6 +19,9 @@
 %   2025-03-02  dhb  Add support for BrainardLabToolbox GamePad interface.
 %   2025-03-04  dhb  Better Windows support.
 
+% Initialize
+clear; close all;
+
 % Put the arduino toolbox some place on you system. This
 % the adds it dynamically. The Matlab add on manager doesn't
 % play well with ToolboxToolbox, which is why it's done this
@@ -49,7 +52,6 @@ end
 % We look for possible ports.  If none, we try a straight call to arduino
 % because it might work.  Otherwise we try each port in turn, hoping we 
 % can open the arduino on one of them.
-clear;
 clear a;
 devRootStr = '/dev/cu.usbmodem';
 arduinoType = 'leonardo';
@@ -296,7 +298,7 @@ clear a;
 % Loop and process characters to control yellow intensity and 
 % red/green mixture
 %
-% Bacj                 -> 'q' - Exit program
+% Back                -> 'q' - Exit program
 %
 % East                  -> 'r' - Increase red in r/g mixture
 % West                  -> 'g' - Increase green in r/g mixture
@@ -307,7 +309,7 @@ clear a;
 % A                     -> '2' - Turn off red, only green in r/g mixture
 % Y                     -> '3' - Both red and green in r/g mixture
 % 
-% Left Upper Trigger    -> 'a' - Advance to next r/g delta (cyclic)
+% Left Upper Trigger     -> 'a' - Advance to next r/g delta (cyclic)
 % Right Upper Trigger   -> ';' - Advance to next yellow delta (cyclic)
 
 function theChar = GamePadToChar(gamePad,action)
