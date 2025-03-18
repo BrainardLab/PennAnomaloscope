@@ -22,110 +22,25 @@
 % Initialize
 clear; close all;
 
-% Put the arduino toolbox some place on you system. This
-% the adds it dynamically. The Matlab add on manager doesn't
-% play well with ToolboxToolbox, which is why it's done this
-% way here.  Also OK to get the arduino toolbox on your path
-% in some other manner.
-%
-% This adds the Arduino toolbox to the path if it isn't there.
-% Does it's best to guess where it is in a version and user independnet
-% manner.  Will probably fail on Windows and Linux
-if (~exist('arduinosetup.m','file'))
-    if (~strcmp(computer,'MACI64') & ~strcmp(computer,'MACA64'))
-        supportPackageDir = matlabshared.supportpkg.getSupportPackageRoot;
-        addpath(genpath(supportPackageDir));
-    else
-        a = ver('MATLAB');
-        rel = a.Release(2:end-1);
-        sysInfo = GetComputerInfo;
-        user = sysInfo.userShortName;
-        addpath(genpath(fullfile('/Users',user,'Documents','MATLAB','SupportPackages',rel)));
-    end
-end
-
-% Initialize arduino
-%
-% In newer versions of OS/Matlab, the arduino call without an argument
-% fails because the port naming convention it assumes fails.  
-%
-% We look for possible ports.  If none, we try a straight call to arduino
-% because it might work.  Otherwise we try each port in turn, hoping we 
-% can open the arduino on one of them.
-clear a;
-devRootStr = '/dev/cu.usbmodem';
-arduinoType = 'leonardo';
-possiblePorts = dir([devRootStr '*']);
-openedOK = false;
-if (isempty(possiblePorts))
-    try 
-        a = arduino;
-        openedOK = true;
-        fprintf('Opened arduino using arduino function''s autodetect of port and type\n');
-    catch e
-        fprintf('Could not detect the arduino port or otherwise open it.\n');
-        fprintf('Rethrowing the underlying error message.\n');
-        rethrow(e);
-    end
-else
-    for pp = 1:length(possiblePorts)
-        thePort = fullfile(possiblePorts.folder,possiblePorts.name);
-        try
-            a = arduino(thePort,arduinoType);
-            openedOK = true;
-        catch e
-        end
-    end
-    if (~openedOK)
-        fprintf('Despite our best cleverness, unable to open arduino. Exiting with an error\n');
-        error('');
-    else
-        fprintf('Opened arduino on detected port %s\n',thePort);
-    end
-end
-
-% Check for game pad, and initialize if present
-%   'GamePad'     - (Default). Use BrainardLabToolbox GamePad interface.
-%   'MatlabInput' - Use Matlab's input() function.
-%   'PTB'         - Use Psychtoolbox GetChar() function.
-interfaceMethod = 'GamePad';
-switch (interfaceMethod)
-    case 'GamePad'
-        try
-            gamePad = GamePad;
-            fprintf('Game pad detected. Using game pad.\n');
-        catch
-            gamePad = [];
-            interfaceMethod = 'MatlabInput';
-            fprintf('No game pad detected, using Matlab''s input(); function.\n');
-        end
-    case 'MatlabInput'
-        fprintf('Using Matlab''s input() function.\n');
-    case 'PTB'
-        try 
-            ListenChar(2);
-            FlushEvents;
-            fprintf('Using Psychtoolbox keyboard i/o.');
-        catch
-            interfaceMethod = 'MatlabInput';
-            fprintf('Working PTB not detected, using Matlab''s input(); function.\n');
-        end
-end
+% Initialize the hardware interfaces to arduino and input device
+[a,gamePad,interfaceMethod] = InitializeHardware;
 
 % Yellow LED parameters
-yellow = 66;                                    % Initial yellow value
-yellowDeltas = [10 5 1];                        % Set of yellow deltas
-yellowDeltaIndex = 1;                           % Delta index    
+yellowDeltas = [10 5 1];                  % Set of yellow deltas
+yellowDeltaIndex = 1;                     % Delta index    
 yellowDelta = yellowDeltas(yellowDeltaIndex);   % Current yellow delta
 
 % Red/green mixture parameters.  These get traded off in the
 % mixture by a parameter lambda.
 redAnchor = 50;                                 % Red value for lambda = 1
-greenAnchor = 350;                              % Green value for lambda = 0
-lambda = 0.5;                                   % Initial lambda value
-lambdaDeltas = [0.02 0.005 0.001];              % Set of lambda deltas
-lambdaDeltaIndex = 1;                           % Delta index
+greenAnchor = 255;                           % Green value for lambda = 0
+lambdaDeltas = [0.1 0.02 0.005];       % Set of lambda deltas
+lambdaDeltaIndex = 1;                       % Delta index
 lambdaDelta = lambdaDeltas(lambdaDeltaIndex);   % Current delta
+
+% Randomize values of yellow and lambda
+yellow = round(255*rand);
+lambda = rand;
 
 % Booleans that control whether we just show red or just green
 % LED in mixture.  This is mostly useful for debugging.
@@ -141,6 +56,9 @@ greenOnly = false;
 % 'g' - Increase green in r/g mixture
 % 'i' - Increase yellow intensity
 % 'd' - Decrease yellow intensity
+%
+% 'm' - Accept a match and randomize settings
+% 's'  - Save matches
 %
 % '1' - Turn off green, only red in r/g mixture
 % '2' - Turn off red, only green in r/g mixture
@@ -218,8 +136,22 @@ while true
     % Do whatever the character we have says to do
     switch theChar
         case 'q'
+            % Exit program
             break;
+
+        case 'm'
+            % User indicates a match.
+            fprintf('\nIt is a match!\n')
+            fprintf('Lambda = %0.3f, Red = %d, Green = %d, Yellow = %d\n',lambda,red, green, yellow);
+            fprintf('\tLambda delta %0.3f; yellow delta %d\n',lambdaDelta,yellowDelta);
+            fprintf('\n');
             
+            % Randomize values of yellow and lambda
+            yellow = round(255*rand);
+            lambda = rand;
+
+        case 's'
+            % Save matches made so far
         case 'r'
             lambda = lambda+lambdaDelta;
             if (lambda > 1)
@@ -298,7 +230,9 @@ clear a;
 % Loop and process characters to control yellow intensity and 
 % red/green mixture
 %
-% Back                -> 'q' - Exit program
+% Back                -> 'q' -  Exit program
+% Start                -> 'm' -  Accept match and randomize
+% X                     -> 's'  -  Save data
 %
 % East                  -> 'r' - Increase red in r/g mixture
 % West                  -> 'g' - Increase green in r/g mixture
@@ -325,10 +259,12 @@ switch (action)
             theChar = 'q';
         elseif (gamePad.buttonStart)
             % fprintf('Start button\n');
+            theChar = 'm';
 
         % Colored buttons (on the right)
         elseif (gamePad.buttonX)
             % fprintf('''X'' button\n');
+            theChar = 's';
         elseif (gamePad.buttonY)
             % fprintf('''Y'' button\n');
             theChar = '3';
@@ -368,7 +304,7 @@ switch (action)
                 theChar = 'd';
             case gamePad.directionNone
                 % fprintf('No direction\n');
-        end  % switch (gamePad.directionChoice)
+        end 
 
     case gamePad.joystickChange % see which analog joystick was changed
         if (gamePad.leftJoyStickDeltaX ~= 0)
@@ -382,4 +318,98 @@ switch (action)
         end
 end
 
+end
+
+
+function [a,gamePad,interfaceMethod] = InitializeHardware()
+
+% Put the arduino toolbox some place on you system. This
+% the adds it dynamically. The Matlab add on manager doesn't
+% play well with ToolboxToolbox, which is why it's done this
+% way here.  Also OK to get the arduino toolbox on your path
+% in some other manner.
+%
+% This adds the Arduino toolbox to the path if it isn't there.
+% Does it's best to guess where it is in a version and user independnet
+% manner.  Will probably fail on Windows and Linux
+if (~exist('arduinosetup.m','file'))
+    if (~strcmp(computer,'MACI64') & ~strcmp(computer,'MACA64'))
+        supportPackageDir = matlabshared.supportpkg.getSupportPackageRoot;
+        addpath(genpath(supportPackageDir));
+    else
+        a = ver('MATLAB');
+        rel = a.Release(2:end-1);
+        sysInfo = GetComputerInfo;
+        user = sysInfo.userShortName;
+        addpath(genpath(fullfile('/Users',user,'Documents','MATLAB','SupportPackages',rel)));
+    end
+end
+
+% Initialize arduino
+%
+% In newer versions of OS/Matlab, the arduino call without an argument
+% fails because the port naming convention it assumes fails.
+%
+% We look for possible ports.  If none, we try a straight call to arduino
+% because it might work.  Otherwise we try each port in turn, hoping we
+% can open the arduino on one of them.
+clear a;
+devRootStr = '/dev/cu.usbmodem';
+arduinoType = 'leonardo';
+possiblePorts = dir([devRootStr '*']);
+openedOK = false;
+if (isempty(possiblePorts))
+    try
+        a = arduino;
+        openedOK = true;
+        fprintf('Opened arduino using arduino function''s autodetect of port and type\n');
+    catch e
+        fprintf('Could not detect the arduino port or otherwise open it.\n');
+        fprintf('Rethrowing the underlying error message.\n');
+        rethrow(e);
+    end
+else
+    for pp = 1:length(possiblePorts)
+        thePort = fullfile(possiblePorts.folder,possiblePorts.name);
+        try
+            a = arduino(thePort,arduinoType);
+            openedOK = true;
+        catch e
+        end
+    end
+    if (~openedOK)
+        fprintf('Despite our best cleverness, unable to open arduino. Exiting with an error\n');
+        error('');
+    else
+        fprintf('Opened arduino on detected port %s\n',thePort);
+    end
+end
+
+% Check for game pad, and initialize if present
+%   'GamePad'     - (Default). Use BrainardLabToolbox GamePad interface.
+%   'MatlabInput' - Use Matlab's input() function.
+%   'PTB'         - Use Psychtoolbox GetChar() function.
+interfaceMethod = 'GamePad';
+switch (interfaceMethod)
+    case 'GamePad'
+        try
+            gamePad = GamePad;
+            fprintf('Game pad detected. Using game pad.\n');
+        catch
+            gamePad = [];
+            interfaceMethod = 'MatlabInput';
+            fprintf('No game pad detected, using Matlab''s input(); function.\n');
+        end
+    case 'MatlabInput'
+        fprintf('Using Matlab''s input() function.\n');
+    case 'PTB'
+        try
+            ListenChar(2);
+            FlushEvents;
+            fprintf('Using Psychtoolbox keyboard i/o.');
+        catch
+            interfaceMethod = 'MatlabInput';
+            fprintf('Working PTB not detected, using Matlab''s input(); function.\n');
+        end
+end
 end
