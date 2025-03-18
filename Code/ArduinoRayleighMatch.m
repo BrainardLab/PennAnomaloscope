@@ -13,13 +13,14 @@
 % History
 %   Written 2020 by David Brainard based on demo code provided by Liana Keesing.
 %
-%   2022-08-27  dhb  Autodect of port for compatibility with newer systesm.
+%   2022-08-27  dhb  Autodetect of port for compatibility with newer systesm.
 %                    Thanks to John Mollon's group for identifying the
 %                    basic problem and fix.
 %   2025-03-02  dhb  Add support for BrainardLabToolbox GamePad interface.
 %   2025-03-04  dhb  Better Windows support.
+%   2025-03-18  dhb  Match accept, data save
 
-% Version 2.01
+% Version 2.02
 
 % Initialize
 clear; close all;
@@ -42,6 +43,10 @@ end
 % Time and date we ran the program.  String.  Useful for
 % forming output filename.
 strForDateTime = datestr(now,'yyyy-mm-dd_HH:MM:SS');
+commandwindow;
+whosAnomaloscope = input('Enter name of anomaloscope: ','s');
+subjectNumber = input('Enter subject number: ');
+outputFilename = fullfile(dataDir,[num2str(subjectNumber) '_' whosAnomaloscope '_' strForDateTime]);
 
 % Yellow LED parameters
 yellowDeltas = [10 5 1];                  % Set of yellow deltas
@@ -52,7 +57,7 @@ yellowDelta = yellowDeltas(yellowDeltaIndex);   % Current yellow delta
 % mixture by a parameter lambda.
 redAnchor = 50;                                 % Red value for lambda = 1
 greenAnchor = 255;                           % Green value for lambda = 0
-lambdaDeltas = [0.1 0.02 0.005];       % Set of lambda deltas
+lambdaDeltas = [0.1 0.02 0.0025];     % Set of lambda deltas
 lambdaDeltaIndex = 1;                       % Delta index
 lambdaDelta = lambdaDeltas(lambdaDeltaIndex);   % Current delta
 
@@ -65,6 +70,14 @@ lambda = rand;
 redOnly = false;
 greenOnly = false;
 yellowOff = false;
+
+% Set up variables to store data for each match
+numberOfMatches = 0;
+redAtMatch = [ ];
+greenAtMatch = [ ];
+yellowAtMatch = [ ];
+lambdaDeltaAtMatch = [ ];
+yellowDeltaAtMatch = [ ];
 
 % Loop and process characters to control yellow intensity and 
 % red/green mixture
@@ -174,21 +187,27 @@ while true
             end
 
             % User indicates a match.
-            fprintf('\nIt is a match!\n')
-            fprintf('Lambda = %0.3f, Red = %d, Green = %d, Yellow = %d\n',lambda,red, green, yellow);
-            fprintf('R/G = 0.3g\n',red/green);
+            fprintf('\n*** Match accepted! ***\n')
+            fprintf('\tLambda = %0.3f, Red = %d, Green = %d, Yellow = %d\n',lambda,red, green, yellow);
+            fprintf('\tR/G = %0.3g\n',red/green);
             fprintf('\tLambda delta %0.3f; yellow delta %d\n',lambdaDelta,yellowDelta);
             fprintf('\n');
+
+            % Store information about this match
+            numberOfMatches = numberOfMatches + 1;
+            redAtMatch(numberOfMatches) = red;
+            greenAtMatch(numberOfMatches) = green;
+            yellowAtMatch(numberOfMatches) = yellow;
+            lambdaDeltaAtMatch(numberOfMatches) = lambdaDelta;
+            yellowDeltaAtMatch(numberOfMatches) = yellowDelta;
             
             % Randomize values of yellow and lambda
             yellow = round(255*rand);
             lambda = rand;
 
         case 's'
-            % Save matches made so far
-            if (playSounds)
-                Speak('Data would have been saved if it were implemented');
-            end
+            % Save into a .mat file
+            save(outputFilename,'numberOfMatches','redAtMatch','greenAtMatch','yellowAtMatch','lambdaDeltaAtMatch','yellowDeltaAtMatch');
 
         case 'r'
             lambda = lambda+lambdaDelta;
