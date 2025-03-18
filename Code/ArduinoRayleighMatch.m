@@ -35,7 +35,7 @@ playSounds = true;
 % same folder as this program.
 mydir = fileparts(mfilename('fullpath'));
 dataDir = fullfile(mydir,'Local');
-if (~exist('dataDir','dir'))
+if (~exist(dataDir,'dir'))
     mkdir(dataDir);
 end
 
@@ -162,12 +162,15 @@ while true
     switch theChar
         case 'q'
             % Exit program
+            if (playSounds)
+                Speak('So long for now');
+            end
             break;
 
         case 'm'
             % Cheer
             if (playSounds)
-                PlayMatchAccept;
+                Speak('Match accepted');
             end
 
             % User indicates a match.
@@ -183,6 +186,9 @@ while true
 
         case 's'
             % Save matches made so far
+            if (playSounds)
+                Speak('Data would have been saved if it were implemented');
+            end
 
         case 'r'
             lambda = lambda+lambdaDelta;
@@ -478,9 +484,3 @@ switch (interfaceMethod)
 end
 end
 
-% Play match accept sound
-function PlayMatchAccept
-    load handel.mat
-    nBits = 16;
-    sound(y(1:16000),Fs,nBits);
-end
