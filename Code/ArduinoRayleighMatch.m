@@ -19,11 +19,29 @@
 %   2025-03-02  dhb  Add support for BrainardLabToolbox GamePad interface.
 %   2025-03-04  dhb  Better Windows support.
 
+% Version 2.01
+
 % Initialize
 clear; close all;
 
+% Play sounds?
+playSounds = true;
+
 % Initialize the hardware interfaces to arduino and input device
 [a,gamePad,interfaceMethod] = InitializeHardware;
+
+% Initialize directory into which to write data.
+% This will be a directory called 'Local' in the
+% same folder as this program.
+mydir = fileparts(mfilename('fullpath'));
+dataDir = fullfile(mydir,'Local');
+if (~exist('dataDir','dir'))
+    mkdir(dataDir);
+end
+
+% Time and date we ran the program.  String.  Useful for
+% forming output filename.
+strForDateTime = datestr(now,'yyyy-mm-dd_HH:MM:SS');
 
 % Yellow LED parameters
 yellowDeltas = [10 5 1];                  % Set of yellow deltas
@@ -46,6 +64,7 @@ lambda = rand;
 % LED in mixture.  This is mostly useful for debugging.
 redOnly = false;
 greenOnly = false;
+yellowOff = false;
 
 % Loop and process characters to control yellow intensity and 
 % red/green mixture
@@ -82,6 +101,12 @@ while true
     if (green > 255)
         green = 255;
     end
+
+   if (yellowOff)
+       yellow = 0;
+   else
+       yellowSave = yellow;
+   end
     
     % Handle special modes for red and green
     if (redOnly)
@@ -140,9 +165,15 @@ while true
             break;
 
         case 'm'
+            % Cheer
+            if (playSounds)
+                PlayMatchAccept;
+            end
+
             % User indicates a match.
             fprintf('\nIt is a match!\n')
             fprintf('Lambda = %0.3f, Red = %d, Green = %d, Yellow = %d\n',lambda,red, green, yellow);
+            fprintf('R/G = 0.3g\n',red/green);
             fprintf('\tLambda delta %0.3f; yellow delta %d\n',lambdaDelta,yellowDelta);
             fprintf('\n');
             
@@ -152,6 +183,7 @@ while true
 
         case 's'
             % Save matches made so far
+
         case 'r'
             lambda = lambda+lambdaDelta;
             if (lambda > 1)
@@ -187,6 +219,15 @@ while true
         case '3'
             redOnly = false;
             greenOnly = false;
+
+        case 't'
+            if (yellowOff)
+                yellowOff = false;
+                yellow = yellowSave;
+            else
+                yellowOff = true;
+                yellowSave = yellow;
+            end
             
         case 'a'
             lambdaDeltaIndex = lambdaDeltaIndex+1;
@@ -195,12 +236,34 @@ while true
             end
             lambdaDelta = lambdaDeltas(lambdaDeltaIndex);
             
+            if (playSounds)
+                switch (lambdaDeltaIndex)
+                    case 1
+                        Speak('lambda big');
+                    case 2
+                        Speak('lambda medium');
+                    case 3
+                        Speak('lambda small');
+                end
+            end
+
         case ';'
             yellowDeltaIndex = yellowDeltaIndex+1;
             if (yellowDeltaIndex > length(yellowDeltas))
                 yellowDeltaIndex = 1;
             end
             yellowDelta = yellowDeltas(yellowDeltaIndex);
+
+            if (playSounds)
+                switch (yellowDeltaIndex)
+                    case 1
+                        Speak('yellow big');
+                    case 2
+                        Speak('yellow medium');
+                    case 3
+                        Speak('yellow small');
+                end
+            end
 
         case 'z'
             % Do nothing for 'z' - returned by unassigned buttons of game
@@ -225,14 +288,13 @@ end
 % Close arduino
 clear a;
 
-
 % Function to map game pad actions to characters
 % Loop and process characters to control yellow intensity and 
 % red/green mixture
 %
 % Back                -> 'q' -  Exit program
-% Start                -> 'm' -  Accept match and randomize
-% X                     -> 's'  -  Save data
+% X                     -> 'm' -  Accept match and randomize
+% Start                -> 's'  -  Save data
 %
 % East                  -> 'r' - Increase red in r/g mixture
 % West                  -> 'g' - Increase green in r/g mixture
@@ -245,6 +307,8 @@ clear a;
 % 
 % Left Upper Trigger     -> 'a' - Advance to next r/g delta (cyclic)
 % Right Upper Trigger   -> ';' - Advance to next yellow delta (cyclic)
+%
+% Lower Right Trigger   -> 't' - Toggle yellow on and off
 
 function theChar = GamePadToChar(gamePad,action)
 
@@ -259,12 +323,12 @@ switch (action)
             theChar = 'q';
         elseif (gamePad.buttonStart)
             % fprintf('Start button\n');
-            theChar = 'm';
+            theChar = 's';
 
         % Colored buttons (on the right)
         elseif (gamePad.buttonX)
             % fprintf('''X'' button\n');
-            theChar = 's';
+            theChar = 'm';
         elseif (gamePad.buttonY)
             % fprintf('''Y'' button\n');
             theChar = '3';
@@ -286,6 +350,7 @@ switch (action)
             % fprintf('Left Lower Trigger button\n');
         elseif (gamePad.buttonRightLowerTrigger)
             % fprintf('Right Lower Trigger button\n');
+            theChar = 't';
         end
 
     case gamePad.directionalButtonChange  % see which direction was selected
@@ -319,7 +384,6 @@ switch (action)
 end
 
 end
-
 
 function [a,gamePad,interfaceMethod] = InitializeHardware()
 
@@ -412,4 +476,11 @@ switch (interfaceMethod)
             fprintf('Working PTB not detected, using Matlab''s input(); function.\n');
         end
 end
+end
+
+% Play match accept sound
+function PlayMatchAccept
+    load handel.mat
+    nBits = 16;
+    sound(y(1:16000),Fs,nBits);
 end
