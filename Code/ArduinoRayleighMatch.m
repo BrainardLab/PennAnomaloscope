@@ -217,6 +217,7 @@ while true
 
         case 's'
             % Save into a .mat file
+            Speak('Match saved');
             save(outputFilename,'numberOfMatches','redAtMatch','greenAtMatch','yellowAtMatch','lambdaDeltaAtMatch','yellowDeltaAtMatch');
 
         case 'r'
