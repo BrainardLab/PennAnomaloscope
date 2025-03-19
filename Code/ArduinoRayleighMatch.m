@@ -19,6 +19,7 @@
 % 6) Cycle through step sizes difficult - maybe increase/decrease option?
 % 7) Indicate how many matches have been made. Or specify number of match
 % 8) Maybe a GUI interface that shows key information.
+% 9) No colons in filename
 
 % History
 %   Written 2020 by David Brainard based on demo code provided by Liana Keesing.
