@@ -10,6 +10,16 @@
 % classic anomaloscope.  See ArduinoRayleighMatchRGY for a different set of
 % controls.
 
+% THINGS TO FIX
+% 1) Reset deltas afrer each match
+% 2) Guide for commands
+% 3) Print out file save confirmation
+% 4) Should we randomize or not after each match?  Or have an option
+% 5) Confusing about which step size I am at
+% 6) Cycle through step sizes difficult - maybe increase/decrease option?
+% 7) Indicate how many matches have been made. Or specify number of match
+% 8) Maybe a GUI interface that shows key information.
+
 % History
 %   Written 2020 by David Brainard based on demo code provided by Liana Keesing.
 %
