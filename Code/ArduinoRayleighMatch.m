@@ -20,6 +20,8 @@
 % 7) Indicate how many matches have been made. Or specify number of match
 % 8) Maybe a GUI interface that shows key information.
 % 9) No colons in filename
+% 10) Record and store time to make match, number of steps and step sizes.
+% 11) Record and store match starting points
 
 % History
 %   Written 2020 by David Brainard based on demo code provided by Liana Keesing.
