@@ -73,7 +73,7 @@ prompt = {'Enter anomaloscope name:','Enter subject number:'};
 dlgtitle = 'Input';
 fieldsize = [1 45; 1 45];
 definput = {'David','0'};
-answer = myInputdlg(prompt,dlgtitle,fieldsize,definput);
+answer = inputdlg(prompt,dlgtitle,fieldsize,definput);
 whosAnomaloscope = answer{1};
 subjectNumber = str2num(answer{2});
 
