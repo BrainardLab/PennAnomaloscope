@@ -11,19 +11,20 @@
 % controls.
 % 
 % THINGS TO FIX FROM CLASS ON 3/18
+%
 % 1) Reset deltas afrer each match - DONE
-% 2) Guide for commands
-% 3) Print out file save confirmation
-% 4) Should we randomize or not after each match?  Or have an option
-% 5) Confusing about which step size I am at
-% 6) Cycle through step sizes difficult - maybe increase/decrease option?
-% 7) Indicate how many matches have been made. Or specify number of match
-% 8) Maybe a GUI interface that shows key information. 
-% 9) No colons in filename
-% 10) Record and store time to make match, number of steps and step sizes.
-% 11) Record and store match starting points
-
-% History
+% 2) Guide for commands - DONE
+% 3) Print out file save confirmation - DONE. ACCEPTING MATCH ALSO SAVES.
+% 4) Should we randomize or not after each match?  Or have an option - OPTION ADDED
+% 5) Confusing about which step size I am at - DISPLAY ADDED
+% 6) Cycle through step sizes difficult - maybe increase/decrease option? - SWITCH TO INCREASE/DECREASE
+% 7) Indicate how many matches have been made. Or specify number of match - NOW IN DISPLAY
+% 8) Maybe a GUI interface that shows key information. - DISPLAY ADDED
+% 9) No colons in filename for Windows compatibility - DONE
+% 10) Record and store time to make match, number of steps and step sizes - DONE
+% 11) Record and store match starting points - DONE
+%
+% History:
 %   Written 2020 by David Brainard based on demo code provided by Liana Keesing.
 %
 %   2022-08-27  dhb  Autodetect of port for compatibility with newer systesm.
@@ -34,11 +35,12 @@
 %   2025-03-18  dhb  Match accept, data save
 %   2025-03-23  dhb  Update with ideas from class on 3/18.  Renaming to
 %                               avoid version confusion.
-
+%
 % Version 3.0
 
 % Initialize
 clear; close all;
+
 
 % Play sounds?
 % 
@@ -51,14 +53,26 @@ statusWindow = true;
 % Print out current settings to command window
 printCurrentSettings = false;
 
+% Randomize match start?
+% When this is false, matches always
+% start at the same place
+randStart = false;
+if (randStart)
+    yellow = round(255*rand);
+    lambda = rand;
+else
+    yellow = 200;
+    lambda = 0;
+end
+
 % Initialize the hardware interfaces to arduino and input device
 [a,gamePad,interfaceMethod] = InitializeHardware;
 
 % Initialize directory into which to write data.
 % This will be a directory called 'Local' in the
 % same folder as this program.
-mydir = fileparts(mfilename('fullpath'));
-dataDir = fullfile(mydir,'Local');
+myDir = fileparts(mfilename('fullpath'));
+dataDir = fullfile(myDir,'Local');
 if (~exist(dataDir,'dir'))
     mkdir(dataDir);
 end
@@ -96,8 +110,13 @@ lambdaDelta = lambdaDeltas(lambdaDeltaIndex);   % Current delta
 deltaLabels = {'Big' 'Medium' 'Small'};
 
 % Randomize values of yellow and lambda
-yellow = round(255*rand);
-lambda = rand;
+if (randStart)
+    yellow = round(255*rand);
+    lambda = rand;
+else
+    yellow = 200;
+    lambda = 0;
+end
 
 % Booleans that control whether we just show red or just green
 % LED in mixture.  This is mostly useful for debugging.
@@ -116,11 +135,27 @@ yellowDeltaAtMatch = [ ];
 % Initialize some tracking variables
 matchStarted = false;
 
+% Some info for placing figures
+screenSize = get(0, 'ScreenSize');
+screenWidth = screenSize(3);
+screenHeight = screenSize(4);
+topOffset = 200;
+leftOffset = 200;
+% % Define the default figure width and height
+% figWidth = 560;  % Default MATLAB figure width
+% figHeight = 420; % Default MATLAB figure height
+% % Define an offset from the top of the screen
+% topOffset = 100;  % Adjust this value as needed
+% % Calculate the position for the new figures
+% position = [screenWidth-figWidth, screenHeight-figHeight-topOffset, figWidth, figHeight];
+
 % If we're using a status window, initialize
 if (statusWindow)
-    figure; clf; hold on;
+    statusFigure = figure; clf; hold on;
+    statusWidth = 1000;
+    statusHeight = 1000;
     set(gca,'FontName','Helvetica');
-    set(gcf,'Position',[10 10 1000 1000]);
+    set(gcf,'Position',[leftOffset  screenHeight-statusHeight-topOffset statusWidth statusHeight]);
     set(gca,'XTick',[]); set(gca,'YTick',[]);
     title('Status Window','FontSize',32);
     hRGDelta = text(0.1,0.6,sprintf('RG step: %s',deltaLabels{lambdaDeltaIndex}),'FontSize',40);
@@ -129,6 +164,14 @@ if (statusWindow)
     hSubject = text(0.1,0.8,sprintf('Subject: %d',subjectNumber),'FontSize',40);
     hMatchesCompleted = text(0.1,0.1,sprintf('Matches completed and saved: %d',numberOfMatches),'FontSize',40);
 end
+
+% Pop up instructions figure
+guideTopOffset = topOffset+00;
+uiopen(fullfile(myDir,'GamePadCommandGuide.fig'),1);
+guideFigure = gcf;
+guidePosition = get(gcf,'Position');
+set(guideFigure,'Position',[leftOffset+statusWidth+60, screenHeight-guidePosition(4)-guideTopOffset, guidePosition(3), guidePosition(4)]);
+figure(statusFigure); figure(guideFigure);
 
 % Loop and process characters to control yellow intensity and 
 % red/green mixture
@@ -205,6 +248,12 @@ while true
         startTime = tic;
         nMatchSteps = 0;
 
+        % Start information
+        lambdaStart = lambda;
+        redStart = red;
+        greenStart = green;
+        yellowStart = yellow;
+
         % Indicate match started
         matchStarted  = true;
     end
@@ -262,10 +311,25 @@ while true
             yellowDeltaAtMatch(numberOfMatches) = yellowDelta;
             matchElapsedTime(numberOfMatches) = toc(startTime);
             nMatchStepsAtMach(numberOfMatches) = nMatchSteps;
+            redStarts(numberOfMatches) = redStart;
+            greenStarts(numberOfMatches) = greenStart;
+            yellowStarts(numberOfMatches) = yellowStart;
+            lambdaStarts(numberOfMatches) = lambdaStart;
             
             % Randomize values of yellow and lambda
-            yellow = round(255*rand);
-            lambda = rand;
+            if (randStart)
+                yellow = round(255*rand);
+                lambda = rand;
+            else
+                yellow = 200;
+                lambda = 0;
+            end
+
+            % Reset deltas
+            lambdaDeltaIndex = 1;
+            lambdaDelta = lambdaDeltas(lambdaDeltaIndex);
+            yellowDeltalIndex = 1;
+            yellowDelta = yellowDeltas(yellowDeltalIndex);
         
             % Indicate next match not started
             matchStarted = false;
@@ -278,7 +342,7 @@ while true
             % User indicates a match.
             fprintf('\n*** Match accepted and saved! ***\n')
             if (printCurrentSettings)
-               fprintf('R/G lambda = %0.3f, Red = %d, Green = %d, Yellow = %d\n',lambda,red, green, yellow);
+                fprintf('R/G lambda = %0.3f, Red = %d, Green = %d, Yellow = %d\n',lambda,red, green, yellow);
                 fprintf('\tYellow delta %0.3f; yellow delta %d\n',lambdaDelta,yellowDelta);
                 fprintf('\tR/G = %0.3g\n',red/green);
                 fprintf('\n');
@@ -291,7 +355,7 @@ while true
 
             % Save into a .mat file
             save(outputFilename,'numberOfMatches','redAtMatch','greenAtMatch','yellowAtMatch','lambdaDeltaAtMatch','yellowDeltaAtMatch', ...
-                'matchElapsedTime','nMatchSteps');   
+                'matchElapsedTime','nMatchSteps','redStarts','greenStarts','yellowStarts','lambdaStarts');   
 
         case 'r'
             lambda = lambda+lambdaDelta;
