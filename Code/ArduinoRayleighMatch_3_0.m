@@ -41,6 +41,10 @@
 % Initialize
 clear; close all;
 
+% Set name of anomaloscope default
+% This can be changed when the program runs
+% in the dialog box that pops up.
+defaultAnomaloscope = 'David';
 
 % Play sounds?
 % 
@@ -86,11 +90,12 @@ strForDateTime = datestr(now,'yyyy-mm-dd_HH-MM-SS');
 prompt = {'Enter anomaloscope name:','Enter subject number:'};
 dlgtitle = 'Input';
 fieldsize = [1 45; 1 45];
-definput = {'David','0'};
+definput = {defaultAnomaloscope,'999'};
 answer = inputdlg(prompt,dlgtitle,fieldsize,definput);
 whosAnomaloscope = answer{1};
 subjectNumber = str2num(answer{2});
 
+% Set output filename
 outputFilename = fullfile(dataDir,[num2str(subjectNumber) '_' whosAnomaloscope '_' strForDateTime]);
 
 % Yellow LED parameters
