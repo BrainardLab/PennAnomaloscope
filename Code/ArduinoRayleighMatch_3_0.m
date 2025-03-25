@@ -135,8 +135,8 @@ leftOffset = 50;
 % If we're using a status window, initialize
 if (statusWindow)
     statusFigure = figure; clf; hold on;
-    statusWidth = 1000;
-    statusHeight = 1000;
+    statusWidth = 700;
+    statusHeight = 700;
     set(gca,'FontName','Helvetica');
     set(gcf,'Position',[leftOffset  screenHeight-statusHeight-topOffset statusWidth statusHeight]);
     set(gca,'XTick',[]); set(gca,'YTick',[]);
