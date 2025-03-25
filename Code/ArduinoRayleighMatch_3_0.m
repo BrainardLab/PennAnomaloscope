@@ -7,22 +7,7 @@
 % to cut out short wavelengths.
 %
 % This version lets you adjust r/g mixture and yellow intensity, as in
-% classic anomaloscope.  See ArduinoRayleighMatchRGY for a different set of
-% controls.
-% 
-% THINGS TO FIX FROM CLASS ON 3/18
-%
-% 1) Reset deltas afrer each match - DONE
-% 2) Guide for commands - DONE
-% 3) Print out file save confirmation - DONE. ACCEPTING MATCH ALSO SAVES.
-% 4) Should we randomize or not after each match?  Or have an option - OPTION ADDED
-% 5) Confusing about which step size I am at - DISPLAY ADDED
-% 6) Cycle through step sizes difficult - maybe increase/decrease option? - SWITCH TO INCREASE/DECREASE
-% 7) Indicate how many matches have been made. Or specify number of match - NOW IN DISPLAY
-% 8) Maybe a GUI interface that shows key information. - DISPLAY ADDED
-% 9) No colons in filename for Windows compatibility - DONE
-% 10) Record and store time to make match, number of steps and step sizes - DONE
-% 11) Record and store match starting points - DONE
+% classic anomaloscope.  
 %
 % History:
 %   Written 2020 by David Brainard based on demo code provided by Liana Keesing.
@@ -99,7 +84,7 @@ subjectNumber = str2num(answer{2});
 outputFilename = fullfile(dataDir,[num2str(subjectNumber) '_' whosAnomaloscope '_' strForDateTime]);
 
 % Yellow LED parameters
-yellowDeltas = [10 5 1];                  % Set of yellow deltas
+yellowDeltas = [20 7 1];                  % Set of yellow deltas
 yellowDeltaIndex = 1;                     % Delta index    
 yellowDelta = yellowDeltas(yellowDeltaIndex);   % Current yellow delta
 
@@ -242,6 +227,13 @@ while true
         yellowDeltalIndex = 1;
         yellowDelta = yellowDeltas(yellowDeltalIndex);
 
+        % Update status
+        if (statusWindow)
+            hYellowDelta.String = sprintf('Yellow step: %s',deltaLabels{yellowDeltaIndex});
+            hRGDelta.String = sprintf('RG step: %s',deltaLabels{lambdaDeltaIndex});
+            hMatchesCompleted.String = sprintf('Matches completed and saved: %d',numberOfMatches);
+        end
+
         % Get match start time and initialize number of steps
         startTime = tic;
         nMatchSteps = 0;
@@ -308,12 +300,16 @@ while true
             lambdaDeltaAtMatch(numberOfMatches) = lambdaDelta;
             yellowDeltaAtMatch(numberOfMatches) = yellowDelta;
             matchElapsedTime(numberOfMatches) = toc(startTime);
-            nMatchStepsAtMach(numberOfMatches) = nMatchSteps;
+            nMatchStepsAtMatch(numberOfMatches) = nMatchSteps;
             redStarts(numberOfMatches) = redStart;
             greenStarts(numberOfMatches) = greenStart;
             yellowStarts(numberOfMatches) = yellowStart;
             lambdaStarts(numberOfMatches) = lambdaStart;
-            
+
+            % Save into a .mat file
+            save(outputFilename,'numberOfMatches','redAtMatch','greenAtMatch','yellowAtMatch','lambdaDeltaAtMatch','yellowDeltaAtMatch', ...
+                'matchElapsedTime','nMatchStepsAtMatch','redStarts','greenStarts','yellowStarts','lambdaStarts');
+
             % Randomize values of yellow and lambda
             if (randStart)
                 yellow = round(255*rand);
@@ -338,7 +334,7 @@ while true
             end
 
             % User indicates a match.
-            fprintf('\n*** Match accepted and saved! ***\n')
+            fprintf('\n*** Match %d accepted and saved! ***\n', numberOfMatches);
             if (printCurrentSettings)
                 fprintf('R/G lambda = %0.3f, Red = %d, Green = %d, Yellow = %d\n',lambda,red, green, yellow);
                 fprintf('\tYellow delta %0.3f; yellow delta %d\n',lambdaDelta,yellowDelta);
@@ -348,12 +344,16 @@ while true
 
             % Update status
             if (statusWindow)
+                hYellowDelta.String = sprintf('Yellow step: %s',deltaLabels{yellowDeltaIndex});
+                hRGDelta.String = sprintf('RG step: %s',deltaLabels{lambdaDeltaIndex});
+
+                % Let user know
+                hMatchesCompleted.String = sprintf('MATCH COMPLETED AND SAVED!');
+                pause(1);
+                hMatchesCompleted.String = '';
+                pause(1);
                 hMatchesCompleted.String = sprintf('Matches completed and saved: %d',numberOfMatches);
             end
-
-            % Save into a .mat file
-            save(outputFilename,'numberOfMatches','redAtMatch','greenAtMatch','yellowAtMatch','lambdaDeltaAtMatch','yellowDeltaAtMatch', ...
-                'matchElapsedTime','nMatchSteps','redStarts','greenStarts','yellowStarts','lambdaStarts');   
 
         case 'r'
             lambda = lambda+lambdaDelta;
