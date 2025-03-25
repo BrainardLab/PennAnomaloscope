@@ -141,11 +141,11 @@ if (statusWindow)
     set(gcf,'Position',[leftOffset  screenHeight-statusHeight-topOffset statusWidth statusHeight]);
     set(gca,'XTick',[]); set(gca,'YTick',[]);
     title('Status Window','FontSize',32);
-    hRGDelta = text(0.1,0.6,sprintf('RG step: %s',deltaLabels{lambdaDeltaIndex}),'FontSize',40);
-    hYellowDelta = text(0.1,0.5,sprintf('Yellow step: %s',deltaLabels{yellowDeltaIndex}),'FontSize',40);
-    hAnomaloscope = text(0.1,0.9,sprintf('Anomaloscope: %s',whosAnomaloscope),'FontSize',40);
-    hSubject = text(0.1,0.8,sprintf('Subject: %d',subjectNumber),'FontSize',40);
-    hMatchesCompleted = text(0.1,0.1,sprintf('Matches completed and saved: %d',numberOfMatches),'FontSize',40);
+    hRGDelta = text(0.1,0.6,sprintf('RG step: %s',deltaLabels{lambdaDeltaIndex}),'FontSize',30);
+    hYellowDelta = text(0.1,0.5,sprintf('Yellow step: %s',deltaLabels{yellowDeltaIndex}),'FontSize',30);
+    hAnomaloscope = text(0.1,0.9,sprintf('Anomaloscope: %s',whosAnomaloscope),'FontSize',30);
+    hSubject = text(0.1,0.8,sprintf('Subject: %d',subjectNumber),'FontSize',30);
+    hMatchesCompleted = text(0.1,0.1,sprintf('Matches completed and saved: %d',numberOfMatches),'FontSize',30);
 end
 
 % Pop up instructions figure
