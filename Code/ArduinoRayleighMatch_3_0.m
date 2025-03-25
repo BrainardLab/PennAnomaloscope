@@ -119,8 +119,8 @@ if (randStart)
     yellow = round(255*rand);
     lambda = rand;
 else
-    yellow = 200;
-    lambda = 0;
+    yellow = 190+20*rand;
+    lambda = 0.2*rand;
 end
 
 % Booleans that control whether we just show red or just green
