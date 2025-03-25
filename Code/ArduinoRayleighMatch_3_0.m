@@ -289,6 +289,10 @@ while true
             if (playSounds)
                 Speak('So long for now');
             end
+
+            % Close all the windows
+            close all;
+            
             break;
 
         case 'm'
