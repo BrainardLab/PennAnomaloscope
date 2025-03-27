@@ -19,17 +19,34 @@
 %   2025-03-04  dhb  Better Windows support.
 %   2025-03-18  dhb  Match accept, data save
 %   2025-03-23  dhb  Update with ideas from class on 3/18.  Renaming to
-%                               avoid version confusion.
+%                    avoid version confusion.
+%   2025-03-27  dhb  Window sizes smaller, fix reset of step sizes, print
+%                    out left and right tube identities.
+%               dhb  Can only accept match when basic sanity checks pass.
 %
-% Version 3.0
+% Version 3.01
+
+%% POSSIBLE CHANGES
+%
+% Only accept a match if step sizes are not at max, number of steps > 10,
+% etc.
 
 % Initialize
 clear; close all;
 
 % Set name of anomaloscope default
+%
 % This can be changed when the program runs
 % in the dialog box that pops up.
+% 
+% We enforce that the name be recognized by this program, so that
+% we can look up which side the R/G tube is on and report,
+% and also so that we don't later get a data filename we can't parse.
+%
+% Note that our compar
 defaultAnomaloscope = 'David';
+anomaloscopeNames =              {'David', 'Nora', 'Kayoung', 'Ray'  'Athena' 'Rebecca' 'Anzusa', 'Vanessa', 'Hannah', 'Adailia'};
+anomaloscopeRGTubeOnLeftList =    [true     true    false      true   false    true      true      true       false     true];
 
 % Play sounds?
 % 
@@ -72,13 +89,24 @@ strForDateTime = datestr(now,'yyyy-mm-dd_HH-MM-SS');
 
 % Get anomaloscope and subject number and combine with date/time
 % to create output filename
-prompt = {'Enter anomaloscope name:','Enter subject number:'};
-dlgtitle = 'Input';
-fieldsize = [1 45; 1 45];
-definput = {defaultAnomaloscope,'999'};
-answer = inputdlg(prompt,dlgtitle,fieldsize,definput);
-whosAnomaloscope = answer{1};
-subjectNumber = str2num(answer{2});
+haveValidAnomaloscope = false;
+while (~haveValidAnomaloscope)
+    prompt = {'Enter anomaloscope name:','Enter subject number:'};
+    dlgtitle = 'Input';
+    fieldsize = [1 45; 1 45];
+    definput = {defaultAnomaloscope,'999'};
+    answer = inputdlg(prompt,dlgtitle,fieldsize,definput);
+    whosAnomaloscope = answer{1};
+    subjectNumber = str2num(answer{2});
+
+    for aa = 1:length(anomaloscopeNames)
+        if (strcmp(lower(whosAnomaloscope),lower(anomaloscopeNames{aa})))
+            anomomaloscopeRGTubeOnLeft = anomaloscopeRGTubeOnLeftList(aa);
+            haveValidAnomaloscope = true;
+            break;
+        end
+    end
+end
 
 % Set output filename
 outputFilename = fullfile(dataDir,[num2str(subjectNumber) '_' whosAnomaloscope '_' strForDateTime]);
@@ -95,6 +123,11 @@ greenAnchor = 255;                           % Green value for lambda = 0
 lambdaDeltas = [0.1 0.02 0.0025];     % Set of lambda deltas
 lambdaDeltaIndex = 1;                       % Delta index
 lambdaDelta = lambdaDeltas(lambdaDeltaIndex);   % Current delta
+
+% Requirements for accepting a match
+minRGMatchSteps = 6;
+minYellowMatchSteps = 6;
+minMatchElapsedTime = 10;
 
 % Labels for deltas
 deltaLabels = {'Big' 'Medium' 'Small'};
@@ -131,30 +164,39 @@ screenWidth = screenSize(3);
 screenHeight = screenSize(4);
 topOffset = 200;
 leftOffset = 50;
+textLeftPosition = 0.02;
+statusFontSize = 24;
 
 % If we're using a status window, initialize
 if (statusWindow)
     statusFigure = figure; clf; hold on;
-    statusWidth = 700;
-    statusHeight = 700;
+    statusWidth = 500;
+    statusHeight = 600;
     set(gca,'FontName','Helvetica');
     set(gcf,'Position',[leftOffset  screenHeight-statusHeight-topOffset statusWidth statusHeight]);
     set(gca,'XTick',[]); set(gca,'YTick',[]);
     title('Status Window','FontSize',32);
-    hRGDelta = text(0.1,0.6,sprintf('RG step: %s',deltaLabels{lambdaDeltaIndex}),'FontSize',30);
-    hYellowDelta = text(0.1,0.5,sprintf('Yellow step: %s',deltaLabels{yellowDeltaIndex}),'FontSize',30);
-    hAnomaloscope = text(0.1,0.9,sprintf('Anomaloscope: %s',whosAnomaloscope),'FontSize',30);
-    hSubject = text(0.1,0.8,sprintf('Subject: %d',subjectNumber),'FontSize',30);
-    hMatchesCompleted = text(0.1,0.1,sprintf('Matches completed and saved: %d',numberOfMatches),'FontSize',30);
-end
+    hRGDelta = text(textLeftPosition,0.4,sprintf('RG step size: %s',deltaLabels{lambdaDeltaIndex}),'FontSize',statusFontSize);
+    hYellowDelta = text(textLeftPosition,0.3,sprintf('Yellow step size: %s',deltaLabels{yellowDeltaIndex}),'FontSize',statusFontSize);
+    hAnomaloscope = text(textLeftPosition,0.9,sprintf('Anomaloscope: %s',whosAnomaloscope),'FontSize',statusFontSize);
+    hSubject = text(textLeftPosition,0.6,sprintf('Subject: %d',subjectNumber),'FontSize',statusFontSize);
+    if (anomomaloscopeRGTubeOnLeft)
+        hTube = text(textLeftPosition,0.8,'RG tube on left','FontSize',statusFontSize);
+        hTube = text(textLeftPosition,0.7,'Yellow tube on right','FontSize',statusFontSize);
+    else
+        hTube = text(textLeftPosition,0.8,'RG tube on right','FontSize',statusFontSize);
+        hTube = text(textLeftPosition,0.7,'Yellow tube on left','FontSize',statusFontSize);
+    end
+    hMatchesCompleted = text(textLeftPosition,0.1,sprintf('Matches completed and saved: %d',numberOfMatches),'FontSize',statusFontSize);
 
-% Pop up instructions figure
-guideTopOffset = topOffset+00;
-uiopen(fullfile(myDir,'GamePadCommandGuide.fig'),1);
-guideFigure = gcf;
-guidePosition = get(gcf,'Position');
-set(guideFigure,'Position',[leftOffset+statusWidth+60, screenHeight-guidePosition(4)-guideTopOffset, guidePosition(3), guidePosition(4)]);
-figure(statusFigure); figure(guideFigure);
+    % Pop up instructions figure
+    guideTopOffset = topOffset-100;
+    uiopen(fullfile(myDir,'GamePadCommandGuide.fig'),1);
+    guideFigure = gcf;
+    guidePosition = get(gcf,'Position');
+    set(guideFigure,'Position',[leftOffset+statusWidth+60, screenHeight-guidePosition(4)-guideTopOffset, round(0.75*guidePosition(3)), round(0.75*guidePosition(4))]);
+    figure(statusFigure); figure(guideFigure);
+end
 
 % Loop and process characters to control yellow intensity and 
 % red/green mixture
@@ -225,18 +267,19 @@ while true
         lambdaDeltaIndex = 1;
         lambdaDelta = lambdaDeltas(lambdaDeltaIndex);
         yellowDeltalIndex = 1;
-        yellowDelta = yellowDeltas(yellowDeltalIndex);
+        yellowDelta = yellowDeltas(yellowDeltaIndex);
 
         % Update status
         if (statusWindow)
-            hYellowDelta.String = sprintf('Yellow step: %s',deltaLabels{yellowDeltaIndex});
-            hRGDelta.String = sprintf('RG step: %s',deltaLabels{lambdaDeltaIndex});
+            hYellowDelta.String = sprintf('Yellow step size: %s',deltaLabels{yellowDeltaIndex});
+            hRGDelta.String = sprintf('RG step size: %s',deltaLabels{lambdaDeltaIndex});
             hMatchesCompleted.String = sprintf('Matches completed and saved: %d',numberOfMatches);
         end
 
         % Get match start time and initialize number of steps
         startTime = tic;
-        nMatchSteps = 0;
+        nRGMatchSteps = 0;
+        nYellowMatchSteps = 0;
 
         % Start information
         lambdaStart = lambda;
@@ -296,67 +339,96 @@ while true
             break;
 
         case 'm'
-            % Store information about this match
-            numberOfMatches = numberOfMatches + 1;
-            redAtMatch(numberOfMatches) = red;
-            greenAtMatch(numberOfMatches) = green;
-            yellowAtMatch(numberOfMatches) = yellow;
-            lambdaDeltaAtMatch(numberOfMatches) = lambdaDelta;
-            yellowDeltaAtMatch(numberOfMatches) = yellowDelta;
-            matchElapsedTime(numberOfMatches) = toc(startTime);
-            nMatchStepsAtMatch(numberOfMatches) = nMatchSteps;
-            redStarts(numberOfMatches) = redStart;
-            greenStarts(numberOfMatches) = greenStart;
-            yellowStarts(numberOfMatches) = yellowStart;
-            lambdaStarts(numberOfMatches) = lambdaStart;
+            % Make sure the match satisfies some sanity checks.
+            % Step sizes should not be at max
+            % Match process should have taken some minimum amount of time.
+            % Match process should have taken some minimum number of steps
+            matchElapsedTime = toc(startTime);
+            if (nRGMatchSteps >= minRGMatchSteps & ...
+                    nYellowMatchSteps >= minYellowMatchSteps &...
+                    yellowDelta ~= yellowDeltas(1) & ...
+                    lambdaDelta ~= lambdaDeltas(1) & ...
+                    matchElapsedTime >= minMatchElapsedTime)
 
-            % Save into a .mat file
-            save(outputFilename,'numberOfMatches','redAtMatch','greenAtMatch','yellowAtMatch','lambdaDeltaAtMatch','yellowDeltaAtMatch', ...
-                'matchElapsedTime','nMatchStepsAtMatch','redStarts','greenStarts','yellowStarts','lambdaStarts');
+                % Store information about this match
+                numberOfMatches = numberOfMatches + 1;
+                redAtMatch(numberOfMatches) = red;
+                greenAtMatch(numberOfMatches) = green;
+                yellowAtMatch(numberOfMatches) = yellow;
+                lambdaDeltaAtMatch(numberOfMatches) = lambdaDelta;
+                yellowDeltaAtMatch(numberOfMatches) = yellowDelta;
+                matchElapsedTimeAtMatch(numberOfMatches) = matchElapsedTime;
+                nRGMatchStepsAtMatch(numberOfMatches) = nRGMatchSteps;
+                nYellowMatchStepsAtMatch(numberOfMatches) = nRGMatchSteps;
+                redStarts(numberOfMatches) = redStart;
+                greenStarts(numberOfMatches) = greenStart;
+                yellowStarts(numberOfMatches) = yellowStart;
+                lambdaStarts(numberOfMatches) = lambdaStart;
 
-            % Randomize values of yellow and lambda
-            if (randStart)
-                yellow = round(255*rand);
-                lambda = rand;
+                % Save into a .mat file
+                save(outputFilename,'numberOfMatches','redAtMatch','greenAtMatch','yellowAtMatch','lambdaDeltaAtMatch','yellowDeltaAtMatch', ...
+                    'matchElapsedTime','nRGMatchStepsAtMatch','nYellowMatchStepsAtMatch','redStarts','greenStarts','yellowStarts','lambdaStarts');
+
+                % Randomize values of yellow and lambda
+                if (randStart)
+                    yellow = round(255*rand);
+                    lambda = rand;
+                else
+                    yellow = 200;
+                    lambda = 0;
+                end
+
+                % Reset deltas
+                lambdaDeltaIndex = 1;
+                lambdaDelta = lambdaDeltas(lambdaDeltaIndex);
+                yellowDeltaIndex = 1;
+                yellowDelta = yellowDeltas(yellowDeltaIndex);
+
+                % Indicate next match not started
+                matchStarted = false;
+
+                % Accept match.
+                if (playSounds)
+                    Speak('Match accepted and saved');
+                end
+
+                % User indicates a match.
+                fprintf('\n*** Match %d accepted and saved! ***\n', numberOfMatches);
+                if (printCurrentSettings)
+                    fprintf('R/G lambda = %0.3f, Red = %d, Green = %d, Yellow = %d\n',lambda,red, green, yellow);
+                    fprintf('\tYellow delta %0.3f; yellow delta %d\n',lambdaDelta,yellowDelta);
+                    fprintf('\tR/G = %0.3g\n',red/green);
+                    fprintf('\n');
+                end
+
+                % Update status
+                if (statusWindow)
+                    hYellowDelta.String = sprintf('Yellow step size: %s',deltaLabels{yellowDeltaIndex});
+                    hRGDelta.String = sprintf('RG step size: %s',deltaLabels{lambdaDeltaIndex});
+
+                    % Let user know
+                    hMatchesCompleted.String = sprintf('MATCH SAVED!');
+                    pause(1);
+                    hMatchesCompleted.String = '';
+                    pause(1);
+                    hMatchesCompleted.String = sprintf('Matches completed and saved: %d',numberOfMatches);
+                end
             else
-                yellow = 200;
-                lambda = 0;
-            end
+                % It is not reasonable to accept this match. Tell user why.
+                if (nRGMatchSteps < minRGMatchSteps)
+                    questdlg('Too few RG steps taken. Take some more time and try to improve match.','Match Not Accepted!','OK','OK');
+                elseif (nYellowMatchSteps < minYellowMatchSteps)
+                    questdlg('Too few yellow steps taken. Take some more time and try to improve match.','Match Not Accepted!','OK','OK');
+                elseif (lambdaDelta == lambdaDeltas(1) | yellowDelta == yellowDeltas(1))
+                    questdlg('At least one step size too big. Reduce step sizes and try to improve match.','Match Not Accepted!','OK','OK');
+                elseif (matchElapsedTime < minMatchElapsedTime)
+                    questdlg('Match made too quickly. Take some more time and try to improve match.','Match Not Accepted!','OK','OK');
+                else
+                    questdlg('Match not accepted for unknown reason. This is a bug in the program.','Match Not Accepted!','OK','OK');
+                end
 
-            % Reset deltas
-            lambdaDeltaIndex = 1;
-            lambdaDelta = lambdaDeltas(lambdaDeltaIndex);
-            yellowDeltalIndex = 1;
-            yellowDelta = yellowDeltas(yellowDeltalIndex);
-        
-            % Indicate next match not started
-            matchStarted = false;
-
-            % Accept match.
-            if (playSounds)
-                Speak('Match accepted and saved');
-            end
-
-            % User indicates a match.
-            fprintf('\n*** Match %d accepted and saved! ***\n', numberOfMatches);
-            if (printCurrentSettings)
-                fprintf('R/G lambda = %0.3f, Red = %d, Green = %d, Yellow = %d\n',lambda,red, green, yellow);
-                fprintf('\tYellow delta %0.3f; yellow delta %d\n',lambdaDelta,yellowDelta);
-                fprintf('\tR/G = %0.3g\n',red/green);
-                fprintf('\n');
-            end
-
-            % Update status
-            if (statusWindow)
-                hYellowDelta.String = sprintf('Yellow step: %s',deltaLabels{yellowDeltaIndex});
-                hRGDelta.String = sprintf('RG step: %s',deltaLabels{lambdaDeltaIndex});
-
-                % Let user know
-                hMatchesCompleted.String = sprintf('MATCH COMPLETED AND SAVED!');
-                pause(1);
-                hMatchesCompleted.String = '';
-                pause(1);
-                hMatchesCompleted.String = sprintf('Matches completed and saved: %d',numberOfMatches);
+                % Get rid of 'm' char. (Probably not necessary.)
+                theChar = 'z';
             end
 
         case 'r'
@@ -364,28 +436,28 @@ while true
             if (lambda > 1)
                 lambda = 1;
             end
-            nMatchSteps = nMatchSteps + 1;
+            nRGMatchSteps = nRGMatchSteps + 1;
 
         case 'g'
             lambda = lambda-lambdaDelta;
             if (lambda < 0)
                 lambda = 0;
             end
-            nMatchSteps = nMatchSteps + 1;
+            nRGMatchSteps = nRGMatchSteps + 1;
             
         case 'i'
             yellow = round(yellow+yellowDelta);
             if (yellow > 255)
                 yellow = 255;
             end
-            nMatchSteps = nMatchSteps + 1;
+            nYellowMatchSteps = nYellowMatchSteps + 1;
             
         case 'd'
             yellow = round(yellow-yellowDelta);
             if (yellow < 0)
                 yellow = 0;
             end
-            nMatchSteps = nMatchSteps + 1;
+            nYellowMatchSteps = nYellowMatchSteps + 1;
             
         case '1'
             redOnly = true;
@@ -430,7 +502,7 @@ while true
 
             % Update status
             if (statusWindow)
-                    hRGDelta.String = sprintf('RG step: %s',deltaLabels{lambdaDeltaIndex});
+                hRGDelta.String = sprintf('RG step size: %s',deltaLabels{lambdaDeltaIndex});
             end
 
         case 'A'
@@ -455,7 +527,7 @@ while true
 
             % Update status
             if (statusWindow)
-                    hRGDelta.String = sprintf('RG step: %s',deltaLabels{lambdaDeltaIndex});
+                    hRGDelta.String = sprintf('RG step size: %s',deltaLabels{lambdaDeltaIndex});
             end
 
         case 'b'
@@ -479,7 +551,7 @@ while true
 
             % Update status window
              if (statusWindow)
-                    hYellowDelta.String = sprintf('Yellow step: %s',deltaLabels{yellowDeltaIndex});
+                    hYellowDelta.String = sprintf('Yellow step size: %s',deltaLabels{yellowDeltaIndex});
              end
 
         case 'B'
@@ -503,7 +575,7 @@ while true
 
             % Update status window
              if (statusWindow)
-                    hYellowDelta.String = sprintf('Yellow step: %s',deltaLabels{yellowDeltaIndex});
+                    hYellowDelta.String = sprintf('Yellow step size: %s',deltaLabels{yellowDeltaIndex});
              end
         case 'z'
             % Do nothing for 'z' - returned by unassigned buttons of game
