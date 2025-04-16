@@ -24,12 +24,7 @@
 %                    out left and right tube identities.
 %               dhb  Can only accept match when basic sanity checks pass.
 %
-% Version 3.01
-
-%% POSSIBLE CHANGES
-%
-% Only accept a match if step sizes are not at max, number of steps > 10,
-% etc.
+% Version 3.02
 
 % Initialize
 clear; close all;
@@ -46,6 +41,8 @@ clear; close all;
 % Note that our compar
 defaultAnomaloscope = 'David';
 anomaloscopeNames =              {'David', 'Nora', 'Kayoung', 'Ray'  'Athena' 'Rebecca' 'Anzusa', 'Vanessa', 'Hannah', 'Adailia'};
+
+% This doesn't do anything at the moment
 anomaloscopeRGTubeOnLeftList =    [true     true    false      true   false    true      true      true       false     true];
 
 % Play sounds?
@@ -137,7 +134,7 @@ if (randStart)
     yellow = round(255*rand);
     lambda = rand;
 else
-    yellow = 190+20*rand;
+    yellow = round(190+20*rand);
     lambda = 0.2*rand;
 end
 
@@ -146,6 +143,7 @@ end
 redOnly = false;
 greenOnly = false;
 yellowOff = false;
+yellowSave = yellow;
 
 % Set up variables to store data for each match
 numberOfMatches = 0;
@@ -176,17 +174,20 @@ if (statusWindow)
     set(gcf,'Position',[leftOffset  screenHeight-statusHeight-topOffset statusWidth statusHeight]);
     set(gca,'XTick',[]); set(gca,'YTick',[]);
     title('Status Window','FontSize',32);
-    hRGDelta = text(textLeftPosition,0.4,sprintf('RG step size: %s',deltaLabels{lambdaDeltaIndex}),'FontSize',statusFontSize);
-    hYellowDelta = text(textLeftPosition,0.3,sprintf('Yellow step size: %s',deltaLabels{yellowDeltaIndex}),'FontSize',statusFontSize);
+    hRGDelta = text(textLeftPosition,0.4,sprintf('RG balance step size: %s',deltaLabels{lambdaDeltaIndex}),'FontSize',statusFontSize);
+    hYellowDelta = text(textLeftPosition,0.3,sprintf('Yellowish brightness step size: %s',deltaLabels{yellowDeltaIndex}),'FontSize',statusFontSize);
     hAnomaloscope = text(textLeftPosition,0.9,sprintf('Anomaloscope: %s',whosAnomaloscope),'FontSize',statusFontSize);
     hSubject = text(textLeftPosition,0.6,sprintf('Subject: %d',subjectNumber),'FontSize',statusFontSize);
-    if (anomomaloscopeRGTubeOnLeft)
-        hTube = text(textLeftPosition,0.8,'RG tube on left','FontSize',statusFontSize);
-        hTube = text(textLeftPosition,0.7,'Yellow tube on right','FontSize',statusFontSize);
-    else
-        hTube = text(textLeftPosition,0.8,'RG tube on right','FontSize',statusFontSize);
-        hTube = text(textLeftPosition,0.7,'Yellow tube on left','FontSize',statusFontSize);
-    end
+
+    % If you have anomaloscope tube logicals set, you can uncomment this to
+    % display them.
+    % if (anomomaloscopeRGTubeOnLeft)
+    %     hTube = text(textLeftPosition,0.8,'RG tube on left','FontSize',statusFontSize);
+    %     hTube = text(textLeftPosition,0.7,'Yellow tube on right','FontSize',statusFontSize);
+    % else
+    %     hTube = text(textLeftPosition,0.8,'RG tube on right','FontSize',statusFontSize);
+    %     hTube = text(textLeftPosition,0.7,'Yellow tube on left','FontSize',statusFontSize);
+    % end
     hMatchesCompleted = text(textLeftPosition,0.1,sprintf('Matches completed and saved: %d',numberOfMatches),'FontSize',statusFontSize);
 
     % Pop up instructions figure
@@ -261,6 +262,17 @@ while true
     writeRGB(a,red,green,0);
     writeYellow(a,yellow);
 
+    % Update status
+    if (statusWindow)
+        if (~yellowOff)
+            hYellowDelta.String = sprintf('Yellowish step size: %s',deltaLabels{yellowDeltaIndex});
+        else
+            hYellowDelta.String = sprintf('Yellowish light is off');
+        end
+        hRGDelta.String = sprintf('RG balance step size: %s',deltaLabels{lambdaDeltaIndex});
+        hMatchesCompleted.String = sprintf('Matches completed and saved: %d',numberOfMatches);
+    end
+
     % Start a match
     if (~matchStarted)
         % Reset deltas
@@ -268,13 +280,6 @@ while true
         lambdaDelta = lambdaDeltas(lambdaDeltaIndex);
         yellowDeltalIndex = 1;
         yellowDelta = yellowDeltas(yellowDeltaIndex);
-
-        % Update status
-        if (statusWindow)
-            hYellowDelta.String = sprintf('Yellow step size: %s',deltaLabels{yellowDeltaIndex});
-            hRGDelta.String = sprintf('RG step size: %s',deltaLabels{lambdaDeltaIndex});
-            hMatchesCompleted.String = sprintf('Matches completed and saved: %d',numberOfMatches);
-        end
 
         % Get match start time and initialize number of steps
         startTime = tic;
@@ -344,12 +349,22 @@ while true
             % Match process should have taken some minimum amount of time.
             % Match process should have taken some minimum number of steps
             matchElapsedTime = toc(startTime);
-            if (nRGMatchSteps >= minRGMatchSteps & ...
+
+            % Check whether it is reasonable to accept match/setting
+            if (~yellowOff)
+                checkOKCondition = nRGMatchSteps >= minRGMatchSteps & ...
                     nYellowMatchSteps >= minYellowMatchSteps &...
                     yellowDelta ~= yellowDeltas(1) & ...
                     lambdaDelta ~= lambdaDeltas(1) & ...
-                    matchElapsedTime >= minMatchElapsedTime)
+                    matchElapsedTime >= minMatchElapsedTime;
+            else
+                 checkOKCondition = nRGMatchSteps >= minRGMatchSteps & ...
+                    lambdaDelta ~= lambdaDeltas(1) & ...
+                    matchElapsedTime >= minMatchElapsedTime;
+            end
 
+            % Accept match if OK to do so
+            if (checkOKCondition)  
                 % Store information about this match
                 numberOfMatches = numberOfMatches + 1;
                 redAtMatch(numberOfMatches) = red;
@@ -377,6 +392,7 @@ while true
                     yellow = 200;
                     lambda = 0;
                 end
+                yellowSave = yellow;
 
                 % Reset deltas
                 lambdaDeltaIndex = 1;
@@ -403,8 +419,12 @@ while true
 
                 % Update status
                 if (statusWindow)
-                    hYellowDelta.String = sprintf('Yellow step size: %s',deltaLabels{yellowDeltaIndex});
-                    hRGDelta.String = sprintf('RG step size: %s',deltaLabels{lambdaDeltaIndex});
+                    if (~yellowOff)
+                        hYellowDelta.String = sprintf('Yellowish step size: %s',deltaLabels{yellowDeltaIndex});
+                    else
+                        hYellowDelta.String = sprintf('Yellowish light is off');
+                    end                    
+                    hRGDelta.String = sprintf('RG balance step size: %s',deltaLabels{lambdaDeltaIndex});
 
                     % Let user know
                     hMatchesCompleted.String = sprintf('MATCH SAVED!');
@@ -475,11 +495,13 @@ while true
             if (yellowOff)
                 yellowOff = false;
                 yellow = yellowSave;
+                hYellowDelta.String = sprintf('Yellowish step size: %s',deltaLabels{yellowDeltaIndex});
             else
                 yellowOff = true;
                 yellowSave = yellow;
+                hYellowDelta.String = sprintf('Yellowish light is off');
             end
-            
+                     
         case 'a'
             % Decrease RG lambda
             lambdaDeltaIndex = lambdaDeltaIndex+1;
@@ -502,7 +524,7 @@ while true
 
             % Update status
             if (statusWindow)
-                hRGDelta.String = sprintf('RG step size: %s',deltaLabels{lambdaDeltaIndex});
+                hRGDelta.String = sprintf('RG balance step size: %s',deltaLabels{lambdaDeltaIndex});
             end
 
         case 'A'
@@ -527,7 +549,7 @@ while true
 
             % Update status
             if (statusWindow)
-                    hRGDelta.String = sprintf('RG step size: %s',deltaLabels{lambdaDeltaIndex});
+                    hRGDelta.String = sprintf('RG balance step size: %s',deltaLabels{lambdaDeltaIndex});
             end
 
         case 'b'
@@ -550,9 +572,11 @@ while true
             end
 
             % Update status window
-             if (statusWindow)
-                    hYellowDelta.String = sprintf('Yellow step size: %s',deltaLabels{yellowDeltaIndex});
-             end
+             if (~yellowOff)
+                hYellowDelta.String = sprintf('Yellowish step size: %s',deltaLabels{yellowDeltaIndex});
+            else
+                hYellowDelta.String = sprintf('Yellowish light is off');
+            end
 
         case 'B'
             % Increase yellow delta
@@ -574,9 +598,11 @@ while true
             end
 
             % Update status window
-             if (statusWindow)
-                    hYellowDelta.String = sprintf('Yellow step size: %s',deltaLabels{yellowDeltaIndex});
-             end
+             if (~yellowOff)
+                hYellowDelta.String = sprintf('Yellowish step size: %s',deltaLabels{yellowDeltaIndex});
+            else
+                hYellowDelta.String = sprintf('Yellowish light is off');
+            end
         case 'z'
             % Do nothing for 'z' - returned by unassigned buttons of game
             % pad.
