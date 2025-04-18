@@ -122,8 +122,8 @@ lambdaDeltaIndex = 1;                       % Delta index
 lambdaDelta = lambdaDeltas(lambdaDeltaIndex);   % Current delta
 
 % Requirements for accepting a match
-minRGMatchSteps = 6;
-minYellowMatchSteps = 6;
+minRGMatchSteps = 8;
+minYellowMatchSteps = 8;
 minMatchElapsedTime = 10;
 
 % Labels for deltas
