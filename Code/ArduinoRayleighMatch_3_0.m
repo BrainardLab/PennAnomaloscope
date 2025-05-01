@@ -139,9 +139,10 @@ else
 end
 
 % Booleans that control whether we just show red or just green
-% LED in mixture.  This is mostly useful for debugging.
+% LED in mixture, or just show yellow. This is mostly useful for debugging and calibration.
 redOnly = false;
 greenOnly = false;
+yellowOnly = false;
 yellowOff = false;
 yellowSave = yellow;
 
@@ -211,9 +212,9 @@ end
 %
 % 'm' - Accept a match, save, and start next match
 %
-% '1' - Turn off green, only red in r/g mixture
-% '2' - Turn off red, only green in r/g mixture
-% '3' - Both red and green in r/g mixture
+% '1' - Turn off green/yellow, only red in r/g mixture
+% '2' - Turn off red/yellow, only green in r/g mixture
+% '3' - Turn off red and green, yellow on re
 % 
 % 'a' - Advance to smaller r/g delta (stops at smallest)
 % 'A' - Go back to larger r/g delta (stops at largest)
@@ -238,16 +239,23 @@ while true
 
    if (yellowOff)
        yellow = 0;
-   else
-       yellowSave = yellow;
    end
     
     % Handle special modes for red and green
     if (redOnly)
         green = 0;
+        yellow = 0;
+        red = 255;
     end
     if (greenOnly)
         red = 0;
+        yellow = 0;
+        green  = 255;
+    end
+    if (yellowOnly)
+        red = 0;
+        green = 0;
+        yellow = 255;
     end
     
     % Tell user where we are
@@ -470,6 +478,7 @@ while true
             if (yellow > 255)
                 yellow = 255;
             end
+            yellowSave = yellow;
             nYellowMatchSteps = nYellowMatchSteps + 1;
             
         case 'd'
@@ -477,20 +486,34 @@ while true
             if (yellow < 0)
                 yellow = 0;
             end
+            yellowSave = yellow;
             nYellowMatchSteps = nYellowMatchSteps + 1;
             
         case '1'
             redOnly = true;
             greenOnly = false;
+            yellowOnly = false;
+            hYellowDelta.String = sprintf('Red only for calibration');
             
         case '2'
             redOnly = false;
             greenOnly = true;
-            
+            yellowOnly = false;
+            hYellowDelta.String = sprintf('Green only for calibration');
+                     
         case '3'
             redOnly = false;
             greenOnly = false;
+            yellowOnly = true;
+            hYellowDelta.String = sprintf('Yellow only for calibration');
 
+        case '4'
+            redOnly = false;
+            greenOnly = false;
+            yellowOnly = false;
+            yellow = yellowSave;
+            hYellowDelta.String = sprintf('Yellowish step size: %s',deltaLabels{yellowDeltaIndex});
+        
         case 't'
             if (yellowOff)
                 yellowOff = false;
@@ -639,9 +662,9 @@ clear a;
 % North                 -> 'i' - Increase yellow intensity
 % South                 -> 'd' - Decrease yellow intensity
 %
-% B                     -> '1' - Turn off green, only red in r/g mixture
-% A                     -> '2' - Turn off red, only green in r/g mixture
-% Y                     -> '3' - Both red and green in r/g mixture
+% B                     -> '1' - Turn off green/yellow, only red in r/g mixture
+% A                     -> '2' - Turn off red/yellow, only green in r/g mixture
+% Y                     -> '3' - Both red and green off, only yellow i
 % 
 % Left Joystick Left       ->  'a' - Advance to smaller r/g delta (cyclic)
 % Left Joystick Right    -> 'A' - Advance to bigger r/g delta (cyclic)
@@ -649,6 +672,7 @@ clear a;
 % Left Joystick Up        -> 'B' - Advance to smaller yellow delta (cyclic)
 %
 % Lower Right Trigger  -> 't' - Toggle yellow on and off
+% Lower Left Trigger - '4' - Leave calibration mode
 
 function theChar = GamePadToChar(gamePad,action)
 
@@ -688,6 +712,7 @@ switch (action)
             theChar = ';';
         elseif (gamePad.buttonLeftLowerTrigger)
             % fprintf('Left Lower Trigger button\n');
+            theChar = '4';
         elseif (gamePad.buttonRightLowerTrigger)
             % fprintf('Right Lower Trigger button\n');
             theChar = 't';
