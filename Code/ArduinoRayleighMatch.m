@@ -492,7 +492,7 @@ end
 %   'GamePad'     - (Default). Use BrainardLabToolbox GamePad interface.
 %   'MatlabInput' - Use Matlab's input() function.
 %   'PTB'         - Use Psychtoolbox GetChar() function.
-interfaceMethod = 'GamePad';
+interfaceMethod = 'PTB';
 switch (interfaceMethod)
     case 'GamePad'
         try
@@ -504,6 +504,7 @@ switch (interfaceMethod)
             fprintf('No game pad detected, using Matlab''s input(); function.\n');
         end
     case 'MatlabInput'
+        gamePad = [];
         fprintf('Using Matlab''s input() function.\n');
     case 'PTB'
         try
@@ -514,6 +515,7 @@ switch (interfaceMethod)
             interfaceMethod = 'MatlabInput';
             fprintf('Working PTB not detected, using Matlab''s input(); function.\n');
         end
+        gamePad = [];
 end
 end
 
