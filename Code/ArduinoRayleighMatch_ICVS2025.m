@@ -23,6 +23,7 @@
 %   2025-03-27  dhb  Window sizes smaller, fix reset of step sizes, print
 %                    out left and right tube identities.
 %               dhb  Can only accept match when basic sanity checks pass.
+%   2025-08-09  dhb  ICVS version
 %
 % Version 3.02
 
@@ -34,16 +35,12 @@ clear; close all;
 % This can be changed when the program runs
 % in the dialog box that pops up.
 % 
-% We enforce that the name be recognized by this program, so that
-% we can look up which side the R/G tube is on and report,
+% We enforce that the name be recognized by this program
 % and also so that we don't later get a data filename we can't parse.
 %
 % Note that our compar
-defaultAnomaloscope = 'David';
-anomaloscopeNames =              {'David', 'Nora', 'Kayoung', 'Ray'  'Athena' 'Rebecca' 'Anzusa', 'Vanessa', 'Hannah', 'Adailia'};
-
-% This doesn't do anything at the moment
-anomaloscopeRGTubeOnLeftList =    [true     true    false      true   false    true      true      true       false     true];
+defaultAnomaloscope = '1';
+anomaloscopeNames =              {'1', '2', '3', '4'  '5' '6' '7', '8', '9'};
 
 % Play sounds?
 % 
@@ -67,6 +64,7 @@ else
     yellow = 200;
     lambda = 0;
 end
+blue = 0;
 
 % Initialize the hardware interfaces to arduino and input device
 [a,gamePad,interfaceMethod] = InitializeAnomaloscopeHardware;
@@ -98,7 +96,6 @@ while (~haveValidAnomaloscope)
 
     for aa = 1:length(anomaloscopeNames)
         if (strcmp(lower(whosAnomaloscope),lower(anomaloscopeNames{aa})))
-            anomomaloscopeRGTubeOnLeft = anomaloscopeRGTubeOnLeftList(aa);
             haveValidAnomaloscope = true;
             break;
         end
@@ -109,16 +106,16 @@ end
 outputFilename = fullfile(dataDir,[num2str(subjectNumber) '_' whosAnomaloscope '_' strForDateTime]);
 
 % Yellow LED parameters
-yellowDeltas = [20 7 1];                  % Set of yellow deltas
-yellowDeltaIndex = 1;                     % Delta index    
+yellowDeltas = [20 7 1];                        % Set of yellow deltas
+yellowDeltaIndex = 1;                           % Delta index    
 yellowDelta = yellowDeltas(yellowDeltaIndex);   % Current yellow delta
 
 % Red/green mixture parameters.  These get traded off in the
 % mixture by a parameter lambda.
 redAnchor = 50;                                 % Red value for lambda = 1
-greenAnchor = 255;                           % Green value for lambda = 0
-lambdaDeltas = [0.1 0.02 0.0025];     % Set of lambda deltas
-lambdaDeltaIndex = 1;                       % Delta index
+greenAnchor = 255;                              % Green value for lambda = 0
+lambdaDeltas = [0.1 0.02 0.0025];               % Set of lambda deltas
+lambdaDeltaIndex = 1;                           % Delta index
 lambdaDelta = lambdaDeltas(lambdaDeltaIndex);   % Current delta
 
 % Requirements for accepting a match
@@ -145,6 +142,7 @@ greenOnly = false;
 yellowOnly = false;
 yellowOff = false;
 yellowSave = yellow;
+blueOnly = false;
 
 % Set up variables to store data for each match
 numberOfMatches = 0;
@@ -179,16 +177,6 @@ if (statusWindow)
     hYellowDelta = text(textLeftPosition,0.3,sprintf('Yellowish brightness step size: %s',deltaLabels{yellowDeltaIndex}),'FontSize',statusFontSize);
     hAnomaloscope = text(textLeftPosition,0.9,sprintf('Anomaloscope: %s',whosAnomaloscope),'FontSize',statusFontSize);
     hSubject = text(textLeftPosition,0.6,sprintf('Subject: %d',subjectNumber),'FontSize',statusFontSize);
-
-    % If you have anomaloscope tube logicals set, you can uncomment this to
-    % display them.
-    % if (anomomaloscopeRGTubeOnLeft)
-    %     hTube = text(textLeftPosition,0.8,'RG tube on left','FontSize',statusFontSize);
-    %     hTube = text(textLeftPosition,0.7,'Yellow tube on right','FontSize',statusFontSize);
-    % else
-    %     hTube = text(textLeftPosition,0.8,'RG tube on right','FontSize',statusFontSize);
-    %     hTube = text(textLeftPosition,0.7,'Yellow tube on left','FontSize',statusFontSize);
-    % end
     hMatchesCompleted = text(textLeftPosition,0.1,sprintf('Matches completed and saved: %d',numberOfMatches),'FontSize',statusFontSize);
 
     % Pop up instructions figure
@@ -201,20 +189,27 @@ if (statusWindow)
 end
 
 % Loop and process characters to control yellow intensity and 
-% red/green mixture
+% red/green mixture.  With the game pad interface, game pad presses
+% are converted to characters by the routine GamePadToChar and then
+% processed as if they were key presses.
 %
 % 'q' - Exit program
+% 'm' - Accept match and save all current matches.  Start new match.
 %
 % 'r' - Increase red in r/g mixture
 % 'g' - Increase green in r/g mixture
 % 'i' - Increase yellow intensity
 % 'd' - Decrease yellow intensity
 %
-% 'm' - Accept a match, save, and start next match
-%
 % '1' - Turn off green/yellow, only red in r/g mixture
 % '2' - Turn off red/yellow, only green in r/g mixture
 % '3' - Turn off red and green, yellow on
+% ';' - Toggle blueOnly  When true turn off red, green and yellow and turn blue on full.
+% '4' - Exit any of the above modes and go back to normal operation.
+%
+% 't' - Toggle yellow off mode.  In yellow off mode, not surprisingly, the
+%       yellow LED is turned off.   This is useful if you want to do unique
+%       yellow settings without bias from the appearance of the yellow LED.
 % 
 % 'a' - Advance to smaller r/g delta (stops at smallest)
 % 'A' - Go back to larger r/g delta (stops at largest)
@@ -237,25 +232,35 @@ while true
         green = 255;
     end
 
+   % If yellow is set to be off, make sure it is off.
    if (yellowOff)
        yellow = 0;
    end
     
-    % Handle special modes for red and green
+    % Handle special modes
     if (redOnly)
         green = 0;
         yellow = 0;
+        blue = 0;
         red = 255;
     end
     if (greenOnly)
         red = 0;
         yellow = 0;
+        blue = 0;
         green  = 255;
     end
     if (yellowOnly)
         red = 0;
         green = 0;
+        blue = 0;
         yellow = 255;
+    end
+    if (blueOnly)
+        red = 0;
+        green = 0;
+        blue = 255;
+        yellow = 0;
     end
     
     % Tell user where we are
@@ -267,7 +272,7 @@ while true
     end
     
     % Write the current LED settings
-    writeRGB(a,red,green,0);
+    writeRGB(a,red,green,blue);
     writeYellow(a,yellow);
 
     % Update status
@@ -281,7 +286,7 @@ while true
         hMatchesCompleted.String = sprintf('Matches completed and saved: %d',numberOfMatches);
     end
 
-    % Start a match
+    % Start a match if we are not in the middle of one
     if (~matchStarted)
         % Reset deltas
         lambdaDeltaIndex = 1;
@@ -332,10 +337,12 @@ while true
             theChar = theString(1);
 
         % Use Psychtoolbox-3 GetChar function.  Works if you have a
-        % supported computer and version of Psychtoolbox-3.
+        % supported computer and version of Psychtoolbox-3, and if the PTB 
+        % char interface is working on  your computer.  Recently this does
+        % not seem very likely to be the case.  This code has not been
+        % tested recently for that reason.
         case 'PTB'
             theChar = GetChar;
-
     end
 
     % Do whatever the character we have says to do
@@ -493,25 +500,38 @@ while true
             redOnly = true;
             greenOnly = false;
             yellowOnly = false;
+            blueOnly = false;
             hYellowDelta.String = sprintf('Red only for calibration');
             
         case '2'
             redOnly = false;
             greenOnly = true;
             yellowOnly = false;
+            blueOnly = false;
             hYellowDelta.String = sprintf('Green only for calibration');
                      
         case '3'
             redOnly = false;
             greenOnly = false;
             yellowOnly = true;
+            blueOnly = false;
             hYellowDelta.String = sprintf('Yellow only for calibration');
+
+        case ';'
+            redOnly = false;
+            greenOnly = false;
+            yellowOnly = false;
+            blueOnly = true;
+            blue = 255;
+            hYellowDelta.String = sprintf('Blue only for calibration');
 
         case '4'
             redOnly = false;
             greenOnly = false;
             yellowOnly = false;
             yellow = yellowSave;
+            blueOnly = false;
+            blue = 0;
             hYellowDelta.String = sprintf('Yellowish step size: %s',deltaLabels{yellowDeltaIndex});
         
         case 't'
@@ -649,114 +669,5 @@ end
 % Close arduino
 clear a;
 
-% Function to map game pad actions to characters
-% Loop and process characters to control yellow intensity and 
-% red/green mixture
-%
-% Back                -> 'q' -  Exit program
-% X                     -> 'm' -  Accept match and randomize
-% Start                -> 's'  -  Save data
-%
-% East                  -> 'r' - Increase red in r/g mixture
-% West                  -> 'g' - Increase green in r/g mixture
-% North                 -> 'i' - Increase yellow intensity
-% South                 -> 'd' - Decrease yellow intensity
-%
-% B                     -> '1' - Turn off green/yellow, only red in r/g mixture
-% A                     -> '2' - Turn off red/yellow, only green in r/g mixture
-% Y                     -> '3' - Both red and green off, only yellow i
-% 
-% Left Joystick Left       ->  'a' - Advance to smaller r/g delta (cyclic)
-% Left Joystick Right    -> 'A' - Advance to bigger r/g delta (cyclic)
-% Left Joystick Down   -> 'b' - Advance to smaller yellow delta (cyclic)
-% Left Joystick Up        -> 'B' - Advance to smaller yellow delta (cyclic)
-%
-% Lower Right Trigger  -> 't' - Toggle yellow on and off
-% Lower Left Trigger - '4' - Leave calibration mode
 
-function theChar = GamePadToChar(gamePad,action)
-
-theChar = 'z';
-switch (action)
-    case gamePad.noChange       % do nothing
-
-    case gamePad.buttonChange   % see which button was pressed
-        % Control buttons
-        if (gamePad.buttonBack)
-            % fprintf('Back button\n');
-            theChar = 'q';
-        elseif (gamePad.buttonStart)
-            % fprintf('Start button\n');
-            theChar = 's';
-
-        % Colored buttons (on the right)
-        elseif (gamePad.buttonX)
-            % fprintf('''X'' button\n');
-            theChar = 'm';
-        elseif (gamePad.buttonY)
-            % fprintf('''Y'' button\n');
-            theChar = '3';
-        elseif (gamePad.buttonA)
-            % fprintf('''A'' button\n');
-            theChar = '2';
-        elseif (gamePad.buttonB)
-            % fprintf('''B'' button\n');
-            theChar = '1';
-
-        % Trigger buttons
-        elseif (gamePad.buttonLeftUpperTrigger)
-            % fprintf('Left Upper Trigger button\n');
-            theChar = 'a';
-        elseif (gamePad.buttonRightUpperTrigger)
-            % fprintf('Right Upper Trigger button\n');
-            theChar = ';';
-        elseif (gamePad.buttonLeftLowerTrigger)
-            % fprintf('Left Lower Trigger button\n');
-            theChar = '4';
-        elseif (gamePad.buttonRightLowerTrigger)
-            % fprintf('Right Lower Trigger button\n');
-            theChar = 't';
-        end
-
-    case gamePad.directionalButtonChange  % see which direction was selected
-        switch (gamePad.directionChoice)
-            case gamePad.directionEast
-                % fprintf('East\n');
-                theChar = 'r';
-            case gamePad.directionWest
-                % fprintf('West\n');
-                theChar = 'g';
-            case gamePad.directionNorth
-                % fprintf('North\n');
-                theChar = 'i';
-            case gamePad.directionSouth
-                % fprintf('South\n');
-                theChar = 'd';
-            case gamePad.directionNone
-                % fprintf('No direction\n');
-        end 
-
-    case gamePad.joystickChange % see which analog joystick was changed
-        if (gamePad.leftJoyStickDeltaX ~= 0)
-            % fprintf('Left Joystick delta-X: %d\n', gamePad.leftJoyStickDeltaX);
-            if (gamePad.leftJoyStickDeltaX < 0)
-                theChar = 'a';
-            else
-                theChar = 'A';
-            end
-        elseif (gamePad.leftJoyStickDeltaY ~= 0)
-            % fprintf('Left Joystick delta-Y: %d\n', gamePad.leftJoyStickDeltaY);
-            if (gamePad.leftJoyStickDeltaY < 0)
-                theChar = 'B';
-            else
-                theChar = 'b';
-            end
-        elseif (gamePad.rightJoyStickDeltaX ~= 0)
-            % fprintf('Right Joystick delta-X: %d\n', gamePad.rightJoyStickDeltaX);
-        elseif (gamePad.rightJoyStickDeltaY ~= 0)
-            % fprintf('Right Joystick delta-Y: %d\n', gamePad.rightJoyStickDeltaY);
-        end
-end
-
-end
 
