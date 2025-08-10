@@ -24,6 +24,28 @@ clear; close all;
 % With the game pad interface, game pad presses
 % are converted to characters by the routine GamePadToChar and then
 % processed as if they were key presses.
+% 
+% See "help GamePadToChar" for a list of which game pad buttons get mapped to which
+% character.  That help text also describes actions that correspond to each
+% character which you can ignore.
+%
+% If you want to change the mapping between game pad buttons and
+% characters, you can edit your copy of GamePadToChar.
+%
+% Note that GamePadToChar relies on the Matlab "Simulink 3D Animation"
+% toolbox.  For ICVS 2025 users, this toolbox is part of the event version
+% of Matlab that we have provided you with, assuming you checked all of the
+% toolboxes when you installed it.  If you are using your own version of
+% Matlab, you either need to get this toolbox from the Mathworks if it is
+% included in the license that you have, or install the event version (see
+% Slack for instructions.)  You can find out by going to the "Add Ons" menu
+% under the home tab in Matlab and scrolling through the list of toolboxes
+% under 'For  You: My Products" on the lefthand menu.  If it is in that
+% list and you don't have it, you can install it from there.
+% 
+% You can find out if  you have the required toolbox by entering
+%   "which vrjoystick".  If it finds vrjoystick.m you are good.  If not,
+% you will need to install this toolbox.
 while (true)
     switch (interfaceMethod)
         % GamePad interface.  What until something happens on the game pad,
