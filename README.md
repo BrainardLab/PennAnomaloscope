@@ -8,6 +8,10 @@ If you use the Penn Anomaloscope in a publication, please cite as:
 
 Keesing, L. & Brainard, D. H. (2022), The Penn anomaloscope, https://github.com/BrainardLab/PennAnomaloscope. 
 
+## Papers that use the Penn Anomaloscope
+
+Ling, L., E. Bilgiç, M. Mak, H. H. Smith, N. Strukov, J. D. Mollon, Danilova, M. V. (2025). Assessment of the Penn anomaloscope. Biomedical Optics Express 16(10). https://opg.optica.org/boe/fulltext.cfm?uri=boe-16-10-3978&id=576497
+
 ## CAD
 
 3D printing STL files for the housing.  The README has a link to a movie that shows the electronics being assembled into the 3D printed housing parts.
