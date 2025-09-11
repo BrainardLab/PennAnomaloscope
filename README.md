@@ -10,7 +10,7 @@ Keesing, L. & Brainard, D. H. (2022), The Penn anomaloscope, https://github.com/
 
 ## Papers that use the Penn Anomaloscope
 
-Ling, L., E. Bilgiç, M. Mak, H. H. Smith, N. Strukov, J. D. Mollon, Danilova, M. V. (2025). Assessment of the Penn anomaloscope. Biomedical Optics Express 16(10). https://opg.optica.org/boe/fulltext.cfm?uri=boe-16-10-3978&id=576497
+Ling, L., E. Bilgiç, M. Mak, H. H. Smith, N. Strukov, J. D. Mollon, Danilova, M. V. (2025). Assessment of the Penn anomaloscope. Biomedical Optics Express 16(10). https://opg.optica.org/boe/fulltext.cfm?uri=boe-16-10-3978&id=576497.
 
 ## CAD
 
