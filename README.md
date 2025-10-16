@@ -31,4 +31,5 @@ Parts list for the electronics (see 2025 updated version) as well as instruction
 02-2025 - Uploaded updated parts list provided by Alexander Gokan.
 02-2025 - Assembly instructions expanded and made consistent with how we are now building these.
 08-2025 - Add ICVS2025 materials in their own directory.
+09-2025 - Add link to Ling et al. paper.
 10-2025 - Add python and arduino direct code provided by Alexander Gokan.
