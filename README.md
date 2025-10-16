@@ -6,7 +6,13 @@ The anomaloscope was developed by Leana Keesing and David Brainard, with support
 
 If you use the Penn Anomaloscope in a publication, please cite as:
 
-Keesing, L. & Brainard, D. H. (2022), The Penn anomaloscope, https://github.com/BrainardLab/PennAnomaloscope. 
+Keesing, L. & Brainard, D. H. (2022). The Penn anomaloscope, https://github.com/BrainardLab/PennAnomaloscope. 
+
+## Reports that use the Penn Anomaloscope
+
+Turner, D., Keesing, L. Gray, J., Morimoto, T. McClements, M. MacLaren, R. Hexley, A., Brainard, D. H., Smithson, H. E. (2024). Testing the reliability and validity of Rayleigh matches and heterochromatic flicker photometry settings on an Arduino-based LED device. Abstract presented at the 2024 27th Meeting of the International Colour Vision Society, Ljubljana, Slovenia, July 5-9, 2024.
+
+Ling, L., E. Bilgiç, M. Mak, H. H. Smith, N. Strukov, J. D. Mollon, Danilova, M. V. (2025). Assessment of the Penn anomaloscope. Biomedical Optics Express 16(10). https://opg.optica.org/boe/fulltext.cfm?uri=boe-16-10-3978&id=576497.
 
 ## CAD
 
