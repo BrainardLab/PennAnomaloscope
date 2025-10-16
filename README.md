@@ -20,7 +20,7 @@ Ling, L., E. Bilgiç, M. Mak, H. H. Smith, N. Strukov, J. D. Mollon, Danilova, M
 
 ## Code
 
-Some basic code for controlling the anomaloscope. Includes code contributed by others. 
+Some basic code for controlling the anomaloscope. Includes code contributed by others. See ICVS2025 for code and calibration data used at the ICVS 2025 Summer School.
 
 ## Electronics
 
@@ -30,3 +30,5 @@ Parts list for the electronics (see 2025 updated version) as well as instruction
 
 02-2025 - Uploaded updated parts list provided by Alexander Gokan.
 02-2025 - Assembly instructions expanded and made consistent with how we are now building these.
+08-2025 - Add ICVS2025 materials in their own directory.
+10-2025 - Add python and arduino direct code provided by Alexander Gokan.
