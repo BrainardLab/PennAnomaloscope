@@ -20,7 +20,7 @@ Ling, L., E. Bilgiç, M. Mak, H. H. Smith, N. Strukov, J. D. Mollon, Danilova, M
 
 ## Code
 
-Some basic code for controlling the anomaloscope. Includes code contributed by others. See ICVS2025 for code and calibration data used at the ICVS 2025 Summer School.
+Some basic code for controlling the anomaloscope. Includes code contributed by others. See ICVS2025 directory for code and calibration data used at the ICVS 2025 Summer School.  See Code/xContributed for code contributed by others.
 
 ## Electronics
 
